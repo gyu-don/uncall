@@ -9,6 +9,7 @@ const element = <T extends HTMLElement>(id: string): T => {
 const runButton = element<HTMLButtonElement>("run");
 const uncallButton = element<HTMLButtonElement>("uncall");
 const failToggle = element<HTMLInputElement>("fail-deploy");
+const sourceEditor = element<HTMLTextAreaElement>("source");
 const resourceList = element<HTMLUListElement>("resources");
 const resourceEmpty = element<HTMLParagraphElement>("resources-empty");
 const logList = element<HTMLOListElement>("execution-log");
@@ -70,6 +71,7 @@ runtime.subscribe((snapshot) => {
   runButton.disabled = snapshot.isBusy || snapshot.canUncall;
   uncallButton.disabled = snapshot.isBusy || !snapshot.canUncall;
   failToggle.disabled = snapshot.isBusy;
+  sourceEditor.disabled = snapshot.isBusy || snapshot.canUncall;
   renderResources(snapshot);
   renderLog(snapshot);
 });
@@ -77,11 +79,19 @@ runtime.subscribe((snapshot) => {
 runButton.addEventListener("click", async () => {
   status.textContent = "Forward execution in progress…";
   try {
-    const result = await runtime.run({ failDeploy: failToggle.checked });
-    status.textContent =
-      result.status === "succeeded"
-        ? "Run complete. Uncall can now clean up in reverse order."
-        : `Run failed and automatic cleanup completed: ${result.error}`;
+    const result = await runtime.run({
+      source: sourceEditor.value,
+      failDeploy: failToggle.checked,
+    });
+    if (result.status === "succeeded") {
+      status.textContent = "Run complete. Uncall can now clean up in reverse order.";
+    } else if (result.status === "compile-failed") {
+      status.textContent = `Compile failed: ${result.error}`;
+    } else if (result.cleanupErrors.length === 0) {
+      status.textContent = `Run failed and automatic cleanup completed: ${result.error}`;
+    } else {
+      status.textContent = `Run failed; cleanup is incomplete: ${result.cleanupErrors.join("; ")}`;
+    }
   } catch (error) {
     status.textContent = error instanceof Error ? error.message : String(error);
   }

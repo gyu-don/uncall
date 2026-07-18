@@ -13,7 +13,7 @@ export const createWorker = (appBundle: string): Hono => {
     }),
   );
   app.get("/health", (context) =>
-    context.json({ status: "ok", service: "uncall", phases: [0, 1] }),
+    context.json({ status: "ok", service: "uncall", phases: [0, 1, 2] }),
   );
   app.notFound((context) => context.json({ error: "Not found" }, 404));
 

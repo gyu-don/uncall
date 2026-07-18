@@ -66,4 +66,18 @@ describe("DemoRuntime", () => {
         ),
     ).toBe(false);
   });
+
+  it("compiles the editable source on every run and reports source locations", async () => {
+    const runtime = new DemoRuntime({ delayMs: 0 });
+
+    await expect(
+      runtime.run({ source: "procedure deploy()\ncall missing()" }),
+    ).resolves.toMatchObject({
+      status: "compile-failed",
+      error: expect.stringContaining("at 2:6"),
+    });
+    await expect(runtime.run()).resolves.toEqual({ status: "succeeded" });
+    await runtime.uncall();
+    expect(runtime.getSnapshot().resources).toEqual([]);
+  });
 });

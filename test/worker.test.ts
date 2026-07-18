@@ -9,7 +9,10 @@ describe("Cloudflare Worker", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
-    await expect(response.text()).resolves.toContain("UNCALL");
+    const html = await response.text();
+    expect(html).toContain("UNCALL");
+    expect(html).toContain('<textarea class="source-editor" id="source"');
+    expect(html).toContain("Phase 2 · host");
   });
 
   it("serves browser JavaScript", async () => {
@@ -27,7 +30,7 @@ describe("Cloudflare Worker", () => {
     await expect(response.json()).resolves.toEqual({
       status: "ok",
       service: "uncall",
-      phases: [0, 1],
+      phases: [0, 1, 2],
     });
   });
 });

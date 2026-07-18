@@ -47,7 +47,7 @@ export const renderHtml = (): string => `<!doctype html>
         height: 3px;
         background: linear-gradient(90deg, var(--lime), var(--blue), var(--amber));
       }
-      button, input { font: inherit; }
+      button, input, textarea { font: inherit; }
       .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 58px 0 48px; }
       header { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; margin-bottom: 34px; }
       .eyebrow { margin: 0 0 12px; color: var(--lime); font: 700 12px/1.2 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
@@ -66,7 +66,8 @@ export const renderHtml = (): string => `<!doctype html>
       .editor__bar { display: flex; align-items: center; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: #39403e; }
       .editor__file { margin-left: 5px; color: var(--muted); font: 11px/1 ui-monospace, monospace; }
-      pre { margin: 0; padding: 25px 22px 28px; color: #d9e1dd; font: 14px/1.9 "SFMono-Regular", Consolas, monospace; tab-size: 4; }
+      .source-editor { display: block; width: 100%; min-height: 230px; margin: 0; border: 0; padding: 25px 22px 28px; resize: vertical; outline: 0; background: transparent; color: #d9e1dd; font: 14px/1.9 "SFMono-Regular", Consolas, monospace; tab-size: 4; }
+      .source-editor:focus { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lime), transparent 35%); }
       .notice { margin: 13px 0 25px; padding-left: 12px; border-left: 2px solid var(--amber); color: var(--muted); font-size: 12px; line-height: 1.55; }
       .controls { display: flex; flex-wrap: wrap; gap: 10px; }
       .button { min-height: 44px; border: 1px solid var(--line); padding: 0 18px; cursor: pointer; font-weight: 750; }
@@ -126,6 +127,7 @@ export const renderHtml = (): string => `<!doctype html>
         <div class="phase-list" aria-label="Implemented phases">
           <span class="phase phase--active">Phase 0 · demo</span>
           <span class="phase phase--active">Phase 1 · parser</span>
+          <span class="phase phase--active">Phase 2 · host</span>
         </div>
       </header>
 
@@ -133,13 +135,13 @@ export const renderHtml = (): string => `<!doctype html>
         <section class="column" aria-labelledby="source-title">
           <div class="section-head">
             <h2 id="source-title">Janus source</h2>
-            <span class="caption">read only</span>
+            <span class="caption">editable · compiled on run</span>
           </div>
           <div class="editor">
             <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">deploy.janus</span></div>
-            <pre><code>${escapeHtml(DEMO_SOURCE)}</code></pre>
+            <textarea class="source-editor" id="source" aria-label="Editable Janus source" spellcheck="false">${escapeHtml(DEMO_SOURCE)}</textarea>
           </div>
-          <p class="notice">Phase 0 executes a fixed TypeScript plan; the displayed source is not parsed by this UI. The independent Phase 1 parser is covered by unit tests and will replace the plan in Phase 2.</p>
+          <p class="notice">Each Run parses, statically checks, and links this calls-only source before the async host executor performs its effects. Compile errors include their source location.</p>
           <div class="controls">
             <button class="button button--run" id="run" type="button">Run →</button>
             <button class="button button--uncall" id="uncall" type="button" disabled>← Uncall</button>
@@ -148,7 +150,7 @@ export const renderHtml = (): string => `<!doctype html>
               <input id="fail-deploy" type="checkbox">
             </label>
           </div>
-          <p id="runtime-status" class="runtime-status" aria-live="polite">Ready. Run creates three browser-local mock resources.</p>
+          <p id="runtime-status" class="runtime-status" aria-live="polite">Ready. Run compiles the source and calls deploy().</p>
         </section>
 
         <section class="column" aria-labelledby="state-title">
@@ -172,7 +174,7 @@ export const renderHtml = (): string => `<!doctype html>
           </div>
         </section>
       </div>
-      <footer><span>Snapshot restore: disabled</span><span>Receipts stay in this browser tab only</span></footer>
+      <footer><span>ADR001 Phase 2 complete · calls-only host effects</span><span>Receipts stay in this browser tab only</span></footer>
     </main>
     <script src="/app.js" defer></script>
   </body>
