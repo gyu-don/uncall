@@ -59,7 +59,7 @@ const selectDemo = (selected: DemoName): void => {
   treePanel.hidden = !treeSelected;
   demoExplainer.innerHTML =
     selected === "sort"
-      ? "<strong>同じsort4を両方向に実行します。</strong> <code>call</code>後の出力は編集可能です。<code>uncall</code>はtraceから分岐を復元し、変更後の出力に対応する別の入力を求めます。"
+      ? "<strong>同じsortを両方向に実行します。</strong> <code>length</code>回の入力を可逆な二重ループで並べ、<code>uncall</code>はtraceから元の制御フローを復元します。"
       : selected === "codec"
         ? "<strong>encodeしか書きません。</strong> <code>call encode</code>後の暗号文は編集可能です。<code>uncall encode</code>は変更後の暗号文から、同じprogramの逆実行で別の平文を求めます。"
         : "<strong>葉の位置をpathへ移します。</strong> <code>call encode_path</code>はループでrootへ上がり、<code>uncall</code>はbitをpopしながら同じ木を葉まで降ります。";
@@ -89,6 +89,7 @@ let sortPhase: SortPhase = "initial";
 let sortInitialState: PureSortState = {
   values: [...INITIAL_PURE_SORT_STATE.values],
   trace: [...INITIAL_PURE_SORT_STATE.trace],
+  length: INITIAL_PURE_SORT_STATE.length,
 };
 let sortState: PureSortState = sortInitialState;
 
@@ -132,10 +133,10 @@ const renderSort = (): void => {
   sortPhaseLabel.textContent = sortPhase;
   sortValuesHint.textContent =
     sortPhase === "called"
-      ? "edit output, then uncall"
+      ? `length ${sortState.length} · edit output, then uncall`
       : sortPhase === "restored"
-        ? "backward result"
-        : "edit initial state";
+        ? `length ${sortState.length} · backward result`
+        : `length ${sortState.length} · edit initial state`;
 };
 
 const readSortValues = (): number[] =>
@@ -149,7 +150,8 @@ const readSortValues = (): number[] =>
 
 const readSortState = (): PureSortState => ({
   values: readSortValues(),
-  trace: [0, 0, 0, 0, 0],
+  trace: [0, 0, 0, 0, 0, 0],
+  length: 4,
 });
 
 sortCallButton.addEventListener("click", () => {
@@ -172,6 +174,7 @@ sortUncallButton.addEventListener("click", () => {
     const backwardInput: PureSortState = {
       values: readSortValues(),
       trace: [...sortState.trace],
+      length: sortState.length,
     };
     const outputEdited =
       JSON.stringify(backwardInput) !== JSON.stringify(sortState);
@@ -207,6 +210,7 @@ sortResetButton.addEventListener("click", () => {
   sortInitialState = {
     values: [...INITIAL_PURE_SORT_STATE.values],
     trace: [...INITIAL_PURE_SORT_STATE.trace],
+    length: INITIAL_PURE_SORT_STATE.length,
   };
   sortState = sortInitialState;
   sortPhase = "initial";

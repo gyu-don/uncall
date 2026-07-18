@@ -10,7 +10,7 @@ UNCALLは可逆プログラミング言語Janusの処理系です。`call`は手
 
 ## 3つのデモ
 
-**ソートして元に戻す**では、5個の比較器が`[4, 1, 3, 2]`を`[1, 2, 3, 4]`へ並べ替え、分岐履歴を`trace = [1, 1, 0, 1, 1]`へ残します。`uncall sort4`はその履歴から制御フローを復元し、元の並び順とゼロのtraceを厳密に取り戻します。
+**ソートして元に戻す**では、可逆な二重ループが`length`個の値をバブルソートします。4要素の`[4, 1, 3, 2]`は`[1, 2, 3, 4]`になり、6回の分岐履歴が`trace = [1, 1, 1, 0, 1, 0]`へ残ります。`uncall sort`は同じループを逆向きに辿り、元の並び順とゼロのtraceを厳密に取り戻します。
 
 **EncodeしてDecodeする**では、5文字の文字コードへshiftを加える`encode`手続きだけを書きます。`call encode`がencoder、`uncall encode`がdecoderになります。
 
@@ -44,8 +44,8 @@ npm run dev
 
 WranglerがローカルURLを表示します。通常は`http://localhost:8787`です。
 
-1. **ソートして元に戻す**で`call sort4`を実行し、値と5個の分岐bitを確認する。
-2. `uncall sort4`で、元の並び順とゼロのtraceが厳密に戻ることを確認する。
+1. **ソートして元に戻す**で`call sort`を実行し、値と6個の分岐bitを確認する。
+2. `uncall sort`で、二重ループを逆向きに実行して元の並び順とゼロのtraceが厳密に戻ることを確認する。
 3. **EncodeしてDecodeする**で`call encode`を実行し、`HELLO`が`KHOOR`になることを確認する。
 4. decoderを追加せずに`uncall encode`を実行し、`HELLO`へ戻ることを確認する。
 5. **木をPathにして戻す**で葉を選択し、`call encode_path`でcursorがrootへ移り、path codeが残ることを確認する。

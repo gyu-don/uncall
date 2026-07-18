@@ -247,7 +247,7 @@ export const renderHtml = (): string => `<!doctype html>
       <div class="demo-switch" role="tablist" aria-label="Pure Janus demos">
         <button class="demo-tab" id="sort-tab" type="button" role="tab" aria-selected="true" aria-controls="sort-demo" data-testid="sort-tab">
           <span class="demo-tab__title">ソートして元に戻す</span>
-          <span class="demo-tab__meta">Reversible Sort · if / swap / trace</span>
+          <span class="demo-tab__meta">Reversible Sort · loop / swap / trace</span>
         </button>
         <button class="demo-tab" id="codec-tab" type="button" role="tab" aria-selected="false" aria-controls="codec-demo" data-testid="codec-tab">
           <span class="demo-tab__title">EncodeしてDecodeする</span>
@@ -258,7 +258,7 @@ export const renderHtml = (): string => `<!doctype html>
           <span class="demo-tab__meta">Tree Path Codec · loop / stack / tree</span>
         </button>
       </div>
-      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>同じsort4を両方向に実行します。</strong> <code>call</code>後の出力は編集可能です。<code>uncall</code>はtraceから分岐を復元し、変更後の出力に対応する別の入力を求めます。</p>
+      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>同じsortを両方向に実行します。</strong> <code>length</code>回の入力を可逆な二重ループで並べ、<code>uncall</code>はtraceから元の制御フローを復元します。</p>
 
       <section class="tab-panel" id="sort-demo" role="tabpanel" aria-labelledby="sort-tab">
         <section class="lab">
@@ -267,20 +267,20 @@ export const renderHtml = (): string => `<!doctype html>
               <p class="kicker">Pure Janus · reversible sort</p>
               <h2>Sort forward.<br><em>Restore backward.</em></h2>
             </div>
-            <p>A normal sort forgets the original order. Janus keeps five branch decisions in trace, then uses them to reverse every conditional and swap.</p>
+            <p>A reversible nested loop sorts <code>length</code> values. Janus keeps each branch decision in trace, then runs those loops and swaps backward.</p>
           </header>
           <div class="lab-grid">
             <section class="lab-pane" aria-labelledby="sort-source-title">
-              <div class="pane-head"><h3 id="sort-source-title">sort4.janus · editable</h3><span class="tag">parser → checker → evaluator</span></div>
+              <div class="pane-head"><h3 id="sort-source-title">sort.janus · editable</h3><span class="tag">parser → checker → evaluator</span></div>
               <div class="editor">
-                <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">sort4.janus</span></div>
+                <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">sort.janus</span></div>
                 <textarea class="source-editor" id="pure-source" aria-label="Pure Janus sort source" spellcheck="false">${escapeHtml(PURE_SORT_SOURCE)}</textarea>
               </div>
             </section>
             <section class="lab-pane" aria-labelledby="sort-state-title">
               <div class="pane-head"><h3 id="sort-state-title">Reversible machine state</h3><span class="tag" id="pure-phase">initial</span></div>
               <div class="proof">
-                <div class="equation">uncall(sort4, <span>call(sort4, state)</span>) = state</div>
+                <div class="equation">uncall(sort, <span>call(sort, state)</span>) = state</div>
                 <p>The real Pure Janus evaluator reverses updates, swaps, statement order, and control flow.</p>
               </div>
               <div class="array-label"><h3>values[4]</h3><span class="tag" id="pure-values-hint">edit initial state</span></div>
@@ -290,29 +290,30 @@ export const renderHtml = (): string => `<!doctype html>
                 <input class="value-cell" type="number" value="3" aria-label="Value 3" data-pure-value="2">
                 <input class="value-cell" type="number" value="2" aria-label="Value 4" data-pure-value="3">
               </div>
-              <div class="array-label"><h3>trace[5]</h3><span class="tag">branch history</span></div>
+              <div class="array-label"><h3>trace[6]</h3><span class="tag">branch history</span></div>
               <ol class="trace-list">
                 <li class="trace-bit" data-pure-trace="0"><code>v0↔v1</code><strong>0</strong><span>empty</span></li>
-                <li class="trace-bit" data-pure-trace="1"><code>v2↔v3</code><strong>0</strong><span>empty</span></li>
-                <li class="trace-bit" data-pure-trace="2"><code>v0↔v2</code><strong>0</strong><span>empty</span></li>
-                <li class="trace-bit" data-pure-trace="3"><code>v1↔v3</code><strong>0</strong><span>empty</span></li>
+                <li class="trace-bit" data-pure-trace="1"><code>v1↔v2</code><strong>0</strong><span>empty</span></li>
+                <li class="trace-bit" data-pure-trace="2"><code>v2↔v3</code><strong>0</strong><span>empty</span></li>
+                <li class="trace-bit" data-pure-trace="3"><code>v0↔v1</code><strong>0</strong><span>empty</span></li>
                 <li class="trace-bit" data-pure-trace="4"><code>v1↔v2</code><strong>0</strong><span>empty</span></li>
+                <li class="trace-bit" data-pure-trace="5"><code>v0↔v1</code><strong>0</strong><span>empty</span></li>
               </ol>
               <div class="stage" aria-label="Sort execution direction">
                 <div class="is-active" data-pure-stage="initial">initial</div>
-                <div data-pure-stage="called">call sort4 →</div>
-                <div data-pure-stage="restored">← uncall sort4</div>
+                <div data-pure-stage="called">call sort →</div>
+                <div data-pure-stage="restored">← uncall sort</div>
               </div>
               <div class="controls">
-                <button class="button button--acid" id="pure-call" type="button" data-testid="pure-call">Call sort4 →</button>
-                <button class="button button--cyan" id="pure-uncall" type="button" disabled data-testid="pure-uncall">← Uncall sort4</button>
+                <button class="button button--acid" id="pure-call" type="button" data-testid="pure-call">Call sort →</button>
+                <button class="button button--cyan" id="pure-uncall" type="button" disabled data-testid="pure-uncall">← Uncall sort</button>
                 <button class="button button--small" id="pure-reset" type="button">Reset</button>
               </div>
               <p class="status" id="pure-status" aria-live="polite"><strong>Ready.</strong> Call the program forward.</p>
             </section>
           </div>
           <div class="footnote">
-            <div><span>Call</span><p>Five compare-and-swaps sort four values.</p></div>
+            <div><span>Call</span><p>Nested reversible loops sort the logical length.</p></div>
             <div><span>Remember</span><p>Trace records only which branches swapped.</p></div>
             <div><span>Uncall</span><p>Exit assertions restore the path, input order, and zero trace.</p></div>
           </div>

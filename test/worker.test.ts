@@ -16,6 +16,9 @@ describe("Cloudflare Worker", () => {
     expect(html).toContain('<textarea class="source-editor codec-source" id="codec-source"');
     expect(html).toContain('<textarea class="source-editor tree-source" id="tree-source"');
     expect(html).toContain("ソートして元に戻す");
+    expect(html).toContain("sort.janus · editable");
+    expect(html).toContain("procedure bubble_pass");
+    expect(html).toContain("trace[6]");
     expect(html).toContain("EncodeしてDecodeする");
     expect(html).toContain("木をPathにして戻す");
     expect(html).toContain("encode.janus · no decoder");

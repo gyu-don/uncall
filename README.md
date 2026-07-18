@@ -10,7 +10,7 @@ The browser demo directly runs this repository's Pure Janus parser, static check
 
 ## Three demos
 
-**Reversible Sort** uses five comparators to turn `[4, 1, 3, 2]` into `[1, 2, 3, 4]`, recording the branch history as `trace = [1, 1, 0, 1, 1]`. `uncall sort4` reconstructs the control flow and restores both the original order and the all-zero trace.
+**Reversible Sort** uses reversible nested loops to bubble-sort `length` values. For four values, it turns `[4, 1, 3, 2]` into `[1, 2, 3, 4]` and records six branch decisions as `trace = [1, 1, 1, 0, 1, 0]`. `uncall sort` runs the same loops backward and restores both the original order and the all-zero trace.
 
 **Encode and Decode** defines only an `encode` procedure that shifts five character codes. `call encode` is the encoder; `uncall encode` is the decoder.
 
@@ -44,8 +44,8 @@ npm run dev
 
 Wrangler prints the local URL, normally `http://localhost:8787`.
 
-1. In **Reversible Sort**, call `sort4` and inspect the sorted values and five branch bits.
-2. Uncall `sort4` and verify that the exact input order and zero trace return.
+1. In **Reversible Sort**, call `sort` and inspect the sorted values and six branch bits.
+2. Uncall `sort` and verify that reversing the nested loops restores the exact input order and zero trace.
 3. In **Encode and Decode**, call `encode` and watch `HELLO` become `KHOOR`.
 4. Without adding a decoder, uncall `encode` and verify that `HELLO` returns.
 5. In **Encode a Tree Path and Restore It**, select a leaf, call `encode_path`, and watch the cursor move to the root while its route remains in the path stack.
