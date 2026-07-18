@@ -1,5 +1,6 @@
 import { PURE_CODEC_SOURCE } from "./demo/pure-codec";
 import { PURE_SORT_SOURCE } from "./demo/pure-sort";
+import { PURE_TREE_CODEC_SOURCE } from "./demo/pure-tree-codec";
 
 const escapeHtml = (value: string): string =>
   value
@@ -104,6 +105,8 @@ export const renderHtml = (): string => `<!doctype html>
       .value-cell { min-width: 0; height: 76px; border: 1px solid var(--line); background: #0b0d0c; color: var(--ink); text-align: center; font: 750 27px/1 ui-monospace, monospace; -moz-appearance: textfield; }
       .value-cell::-webkit-inner-spin-button { appearance: none; }
       .value-cell:focus { outline: 1px solid var(--acid); }
+      .value-cell.is-output { border-color: rgba(118,221,255,.55); color: var(--cyan); }
+      .value-cell.is-output:focus { outline-color: var(--acid); color: var(--ink); }
       .value-cell:disabled { opacity: 1; border-color: rgba(118,221,255,.35); color: var(--cyan); }
       .trace-list { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
       .trace-bit { min-width: 0; border: 1px solid var(--line); background: #0b0d0c; padding: 10px 5px; text-align: center; }
@@ -142,6 +145,8 @@ export const renderHtml = (): string => `<!doctype html>
       .field span { display: block; margin-bottom: 7px; color: var(--dim); font: 8px/1 ui-monospace, monospace; text-transform: uppercase; }
       .text-input { width: 100%; height: 48px; border: 1px solid var(--line); padding: 0 12px; outline: 0; background: #0b0d0c; color: var(--ink); font: 700 17px/1 ui-monospace, monospace; }
       .text-input:focus { border-color: var(--acid); }
+      .text-input.is-output { border-color: rgba(118,221,255,.55); color: var(--cyan); }
+      .text-input.is-output:focus { border-color: var(--acid); color: var(--ink); }
       .text-input:disabled { opacity: 1; color: var(--cyan); }
       .codec-word { margin: 0 0 12px; color: var(--cyan); font: 800 clamp(46px,7vw,84px)/1 ui-monospace, monospace; letter-spacing: .08em; }
       .codec-codes { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin: 0; padding: 0; list-style: none; }
@@ -150,12 +155,51 @@ export const renderHtml = (): string => `<!doctype html>
       .codec-codes code { color: var(--dim); font: 8px/1 ui-monospace, monospace; }
       .codec-inverse { margin: 17px 0 0; border: 1px solid rgba(215,255,100,.32); padding: 13px; color: var(--muted); font: 10px/1.6 ui-monospace, monospace; }
       .codec-inverse strong { color: var(--acid); }
+      .tree-grid { grid-template-columns: minmax(0,.78fr) minmax(520px,1.22fr); }
+      .tree-source { min-height: 610px; }
+      .tree-visual { border: 1px solid var(--line); background: radial-gradient(circle at 50% 20%, rgba(118,221,255,.07), transparent 46%), #0b0d0c; }
+      .tree-map { display: block; width: 100%; height: auto; min-height: 300px; overflow: visible; }
+      .tree-edge { stroke: #353b36; stroke-width: 2; transition: stroke .2s ease, stroke-width .2s ease; }
+      .tree-edge-label { fill: var(--dim); font: 700 16px/1 ui-monospace, monospace; }
+      .tree-edge.is-route { stroke: var(--cyan); stroke-width: 5; stroke-dasharray: 10 8; animation: tree-route 1.1s linear infinite; }
+      .tree-edge-label.is-route { fill: var(--cyan); }
+      .tree-node circle { fill: #121513; stroke: #424942; stroke-width: 2; transition: fill .2s ease, stroke .2s ease, stroke-width .2s ease; }
+      .tree-node text { fill: var(--muted); font: 750 18px/1 ui-monospace, monospace; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+      .tree-node .tree-node-id { fill: var(--dim); font-size: 10px; }
+      .tree-node.is-route circle { stroke: var(--cyan); }
+      .tree-node.is-origin circle { stroke: var(--acid); }
+      .tree-node.is-current circle { fill: var(--acid); stroke: var(--acid); stroke-width: 5; filter: drop-shadow(0 0 13px rgba(215,255,100,.34)); }
+      .tree-node.is-current text { fill: var(--acid-ink); }
+      .tree-node.is-current .tree-node-id { fill: rgba(21,27,8,.64); }
+      @keyframes tree-route { to { stroke-dashoffset: -18; } }
+      .leaf-picker { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin: 12px; }
+      .leaf-choice { min-width: 0; border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; background: #101311; color: var(--muted); font: 750 10px/1.35 ui-monospace, monospace; }
+      .leaf-choice span { display: block; margin-top: 3px; color: var(--dim); font-size: 8px; }
+      .leaf-choice.is-selected { border-color: var(--acid); color: var(--acid); }
+      .leaf-choice:disabled { cursor: not-allowed; opacity: .45; }
+      .tree-state { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 14px; }
+      .tree-register { border: 1px solid var(--line); padding: 10px; background: #0b0d0c; }
+      .tree-register span { display: block; margin-bottom: 7px; color: var(--dim); font: 8px/1 ui-monospace, monospace; text-transform: uppercase; }
+      .tree-register strong { color: var(--ink); font: 750 16px/1.2 ui-monospace, monospace; }
+      .tree-register.is-clean strong { color: var(--green); }
+      .path-display { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: end; margin-top: 14px; }
+      .path-stack { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin: 0; padding: 0; list-style: none; }
+      .path-slot { border: 1px solid var(--line); padding: 10px 5px; background: #0b0d0c; text-align: center; }
+      .path-slot code { display: block; margin-bottom: 7px; color: var(--dim); font: 8px/1 ui-monospace, monospace; }
+      .path-slot strong { color: var(--dim); font: 750 23px/1 ui-monospace, monospace; }
+      .path-slot.is-used { border-color: rgba(118,221,255,.58); background: rgba(118,221,255,.05); }
+      .path-slot.is-used strong { color: var(--cyan); }
+      .route-output { min-width: 120px; text-align: right; }
+      .route-output span { display: block; margin-bottom: 6px; color: var(--dim); font: 8px/1 ui-monospace, monospace; text-transform: uppercase; }
+      .route-output strong { color: var(--cyan); font: 800 38px/1 ui-monospace, monospace; letter-spacing: .08em; }
       footer { display: flex; justify-content: space-between; gap: 18px; padding: 21px 2px 0; color: var(--dim); font: 9px/1.5 ui-monospace, monospace; }
       [hidden] { display: none !important; }
       @media (max-width: 850px) {
         .shell { width: min(100% - 24px,700px); }
         .topbar { margin-bottom: 44px; }
-        .hero, .lab-intro, .lab-grid, .codec-grid { grid-template-columns: 1fr; }
+        .demo-switch { display: flex; width: 100%; }
+        .demo-tab { min-width: 0; flex: 1; }
+        .hero, .lab-intro, .lab-grid, .codec-grid, .tree-grid { grid-template-columns: 1fr; }
         .lab-pane + .lab-pane { order: -1; border-left: 0; }
         .lab-pane:first-child { border-top: 1px solid var(--line); }
       }
@@ -173,6 +217,10 @@ export const renderHtml = (): string => `<!doctype html>
         .lab-pane { padding: 20px; }
         .source-editor { min-height: 610px; }
         .codec-source { min-height: 330px; }
+        .tree-source { min-height: 520px; }
+        .tree-map { min-height: 230px; }
+        .path-display { grid-template-columns: 1fr; }
+        .route-output { text-align: left; }
         .codec-inputs { grid-template-columns: 1fr 90px; }
         .footnote { grid-template-columns: 1fr; }
         .footnote div { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -205,8 +253,12 @@ export const renderHtml = (): string => `<!doctype html>
           <span class="demo-tab__title">EncodeしてDecodeする</span>
           <span class="demo-tab__meta">Caesar Codec · += becomes -=</span>
         </button>
+        <button class="demo-tab" id="tree-tab" type="button" role="tab" aria-selected="false" aria-controls="tree-demo" data-testid="tree-tab">
+          <span class="demo-tab__title">木をPathにして戻す</span>
+          <span class="demo-tab__meta">Tree Path Codec · loop / stack / tree</span>
+        </button>
       </div>
-      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>同じsort4を両方向に実行します。</strong> <code>call</code>は値を並べ替え、<code>uncall</code>はtraceから分岐を復元して元の順番へ戻します。</p>
+      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>同じsort4を両方向に実行します。</strong> <code>call</code>後の出力は編集可能です。<code>uncall</code>はtraceから分岐を復元し、変更後の出力に対応する別の入力を求めます。</p>
 
       <section class="tab-panel" id="sort-demo" role="tabpanel" aria-labelledby="sort-tab">
         <section class="lab">
@@ -231,7 +283,7 @@ export const renderHtml = (): string => `<!doctype html>
                 <div class="equation">uncall(sort4, <span>call(sort4, state)</span>) = state</div>
                 <p>The real Pure Janus evaluator reverses updates, swaps, statement order, and control flow.</p>
               </div>
-              <div class="array-label"><h3>values[4]</h3><span class="tag">edit initial state</span></div>
+              <div class="array-label"><h3>values[4]</h3><span class="tag" id="pure-values-hint">edit initial state</span></div>
               <div class="value-array">
                 <input class="value-cell" type="number" value="4" aria-label="Value 1" data-pure-value="0">
                 <input class="value-cell" type="number" value="1" aria-label="Value 2" data-pure-value="1">
@@ -292,8 +344,8 @@ export const renderHtml = (): string => `<!doctype html>
                 <p>There is no decoder procedure. The real evaluator executes encode backward.</p>
               </div>
               <div class="codec-inputs">
-                <label class="field"><span>5-character message</span><input class="text-input" id="codec-input" value="HELLO" maxlength="5" aria-label="Message"></label>
-                <label class="field"><span>shift</span><input class="text-input" id="codec-shift" type="number" value="3" aria-label="Shift"></label>
+                <label class="field"><span id="codec-message-label">5-character message</span><input class="text-input" id="codec-input" value="HELLO" maxlength="5" aria-label="Message"></label>
+                <label class="field"><span id="codec-shift-label">shift</span><input class="text-input" id="codec-shift" type="number" value="3" aria-label="Shift"></label>
               </div>
               <p class="codec-word" id="codec-word">HELLO</p>
               <ol class="codec-codes" id="codec-codes">
@@ -315,6 +367,99 @@ export const renderHtml = (): string => `<!doctype html>
               </div>
               <p class="status" id="codec-status" aria-live="polite"><strong>Ready.</strong> Call encode. Then uncall the same procedure to decode.</p>
             </section>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tree-demo" role="tabpanel" aria-labelledby="tree-tab" hidden>
+        <section class="lab">
+          <header class="lab-intro">
+            <div>
+              <p class="kicker">Pure Janus · tree path codec</p>
+              <h2>Climb to encode.<br><em>Descend to restore.</em></h2>
+            </div>
+            <p>A leaf becomes a route at the root. The same loop runs backward, pops each path bit, and walks the fixed tree back to the exact symbol.</p>
+          </header>
+          <div class="lab-grid tree-grid">
+            <section class="lab-pane" aria-labelledby="tree-source-title">
+              <div class="pane-head"><h3 id="tree-source-title">encode_path.janus · editable</h3><span class="tag">real loop · no decoder</span></div>
+              <div class="editor">
+                <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">encode_path.janus</span></div>
+                <textarea class="source-editor tree-source" id="tree-source" aria-label="Pure Janus tree path encoder source" spellcheck="false">${escapeHtml(PURE_TREE_CODEC_SOURCE)}</textarea>
+              </div>
+              <p class="codec-inverse"><strong>Loop invariant:</strong><br><code>temp</code> returns to zero after every edge. The child identity moves into <code>path</code>, never disappears.</p>
+            </section>
+            <section class="lab-pane" aria-labelledby="tree-state-title">
+              <div class="pane-head"><h3 id="tree-state-title">Fixed tree · reversible cursor</h3><span class="tag" id="tree-phase">initial</span></div>
+              <div class="proof">
+                <div class="equation">uncall(encode_path, <span>call(encode_path, <b id="tree-proof-symbol">C</b>)</span>) = <b id="tree-proof-result">C</b></div>
+                <p>The leaf identity moves into a LIFO path. Uncall consumes that path from root to leaf and clears every bit.</p>
+              </div>
+
+              <div class="tree-visual">
+                <svg class="tree-map" viewBox="0 0 660 380" role="img" aria-label="A fixed binary prefix tree with leaves A, B, C, and D">
+                  <line class="tree-edge" data-tree-edge="1" x1="300" y1="52" x2="92" y2="130"></line>
+                  <text class="tree-edge-label" data-tree-edge-label="1" x="187" y="82">0</text>
+                  <line class="tree-edge" data-tree-edge="2" x1="300" y1="52" x2="405" y2="130"></line>
+                  <text class="tree-edge-label" data-tree-edge-label="2" x="365" y="82">1</text>
+                  <line class="tree-edge" data-tree-edge="3" x1="405" y1="130" x2="280" y2="230"></line>
+                  <text class="tree-edge-label" data-tree-edge-label="3" x="329" y="175">0</text>
+                  <line class="tree-edge" data-tree-edge="4" x1="405" y1="130" x2="510" y2="230"></line>
+                  <text class="tree-edge-label" data-tree-edge-label="4" x="470" y="175">1</text>
+                  <line class="tree-edge" data-tree-edge="5" x1="510" y1="230" x2="435" y2="330"></line>
+                  <text class="tree-edge-label" data-tree-edge-label="5" x="457" y="278">0</text>
+                  <line class="tree-edge" data-tree-edge="6" x1="510" y1="230" x2="590" y2="330"></line>
+                  <text class="tree-edge-label" data-tree-edge-label="6" x="563" y="278">1</text>
+
+                  <g class="tree-node" data-tree-node="0" transform="translate(300 52)"><circle r="32"></circle><text y="-2">ROOT</text><text class="tree-node-id" y="18">node 0</text></g>
+                  <g class="tree-node" data-tree-node="1" transform="translate(92 130)"><circle r="30"></circle><text y="-2">A</text><text class="tree-node-id" y="17">node 1</text></g>
+                  <g class="tree-node" data-tree-node="2" transform="translate(405 130)"><circle r="25"></circle><text>●</text></g>
+                  <g class="tree-node" data-tree-node="3" transform="translate(280 230)"><circle r="30"></circle><text y="-2">B</text><text class="tree-node-id" y="17">node 3</text></g>
+                  <g class="tree-node" data-tree-node="4" transform="translate(510 230)"><circle r="25"></circle><text>●</text></g>
+                  <g class="tree-node" data-tree-node="5" transform="translate(435 330)"><circle r="30"></circle><text y="-2">C</text><text class="tree-node-id" y="17">node 5</text></g>
+                  <g class="tree-node" data-tree-node="6" transform="translate(590 330)"><circle r="30"></circle><text y="-2">D</text><text class="tree-node-id" y="17">node 6</text></g>
+                </svg>
+                <div class="leaf-picker" aria-label="Select a leaf symbol">
+                  <button class="leaf-choice" type="button" data-tree-leaf="1">A<span>route 0</span></button>
+                  <button class="leaf-choice" type="button" data-tree-leaf="3">B<span>route 10</span></button>
+                  <button class="leaf-choice is-selected" type="button" data-tree-leaf="5">C<span>route 110</span></button>
+                  <button class="leaf-choice" type="button" data-tree-leaf="6">D<span>route 111</span></button>
+                </div>
+              </div>
+
+              <div class="tree-state" aria-label="Tree codec registers">
+                <div class="tree-register"><span>node</span><strong id="tree-node-value">5 · C</strong></div>
+                <div class="tree-register"><span>depth</span><strong id="tree-depth-value">0</strong></div>
+                <div class="tree-register is-clean" id="tree-temp-register"><span>temp · scratch</span><strong id="tree-temp-value">0 · clean</strong></div>
+              </div>
+              <div class="path-display">
+                <div>
+                  <div class="array-label"><h3>path[3]</h3><span class="tag">bottom → top · pop right to left</span></div>
+                  <ol class="path-stack">
+                    <li class="path-slot" data-tree-path="0"><code>path[0]</code><strong>·</strong></li>
+                    <li class="path-slot" data-tree-path="1"><code>path[1]</code><strong>·</strong></li>
+                    <li class="path-slot" data-tree-path="2"><code>path[2]</code><strong>·</strong></li>
+                  </ol>
+                </div>
+                <div class="route-output"><span>root → leaf</span><strong id="tree-route">—</strong></div>
+              </div>
+              <div class="stage" aria-label="Tree codec execution direction">
+                <div class="is-active" data-tree-stage="initial">leaf selected</div>
+                <div data-tree-stage="called">call · climb ↑</div>
+                <div data-tree-stage="restored">uncall · descend ↓</div>
+              </div>
+              <div class="controls">
+                <button class="button button--acid" id="tree-call" type="button" data-testid="tree-call">Call encode_path ↑</button>
+                <button class="button button--cyan" id="tree-uncall" type="button" disabled data-testid="tree-uncall">↓ Uncall encode_path</button>
+                <button class="button button--small" id="tree-reset" type="button">Reset</button>
+              </div>
+              <p class="status" id="tree-status" aria-live="polite"><strong>Ready.</strong> Choose a leaf, then call the loop to encode its route.</p>
+            </section>
+          </div>
+          <div class="footnote">
+            <div><span>Call · push</span><p>Each loop reads left/right, pushes one bit, and moves the cursor to its parent.</p></div>
+            <div><span>Keep clean</span><p>The fixed tree reconstructs the old child, allowing scratch <code>temp</code> to return to zero.</p></div>
+            <div><span>Uncall · pop</span><p>Bits are consumed from the stack to choose children until the exact leaf returns.</p></div>
           </div>
         </section>
       </section>

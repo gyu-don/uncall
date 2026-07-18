@@ -14,9 +14,14 @@ describe("Cloudflare Worker", () => {
     expect(html).toContain("One program.");
     expect(html).toContain('<textarea class="source-editor" id="pure-source"');
     expect(html).toContain('<textarea class="source-editor codec-source" id="codec-source"');
+    expect(html).toContain('<textarea class="source-editor tree-source" id="tree-source"');
     expect(html).toContain("ソートして元に戻す");
     expect(html).toContain("EncodeしてDecodeする");
+    expect(html).toContain("木をPathにして戻す");
     expect(html).toContain("encode.janus · no decoder");
+    expect(html).toContain("encode_path.janus · editable");
+    expect(html).toContain('data-tree-node="6"');
+    expect(html).toContain('data-testid="tree-call"');
     expect(html).toContain("No generated inverse program. The same AST runs backward.");
   });
 

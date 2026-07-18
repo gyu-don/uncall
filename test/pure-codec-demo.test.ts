@@ -29,4 +29,13 @@ describe("Pure Janus encoder/decoder demo", () => {
       ),
     ).toEqual(initial);
   });
+
+  it("decodes an edited encoded output to a different message", () => {
+    const encoded = callPureEncode(PURE_CODEC_SOURCE, INITIAL_PURE_CODEC_STATE);
+    const editedOutput = { ...encoded, message: [90, 72, 79, 79, 82] };
+    const decoded = uncallPureEncode(PURE_CODEC_SOURCE, editedOutput);
+
+    expect(codecText(decoded)).toBe("WELLO");
+    expect(decoded.shift).toBe(3);
+  });
 });

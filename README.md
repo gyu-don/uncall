@@ -8,7 +8,7 @@ UNCALL is an implementation of the reversible programming language Janus. `call`
 
 The browser demo directly runs this repository's Pure Janus parser, static checker, resolver, and forward/backward evaluator.
 
-## Two demos
+## Three demos
 
 **Reversible Sort** uses five comparators to turn `[4, 1, 3, 2]` into `[1, 2, 3, 4]`, recording the branch history as `trace = [1, 1, 0, 1, 1]`. `uncall sort4` reconstructs the control flow and restores both the original order and the all-zero trace.
 
@@ -28,6 +28,8 @@ procedure encode()
 
 For example, `HELLO` with shift `3` becomes `KHOOR`, and uncalling the same `encode` procedure restores `HELLO`.
 
+**Encode a Tree Path and Restore It** maps leaves `A`, `B`, `C`, and `D` in a fixed binary tree to the root-to-leaf routes `0`, `10`, `110`, and `111`. `call encode_path` loops upward through parents while pushing left/right bits onto a path stack. `uncall encode_path` pops those bits to descend through the children and restore both the original leaf and an empty stack. The browser visualizes the tree, current node, path, depth, and the scratch variable `temp` returning to zero on every edge.
+
 ## Try the demo
 
 Requirements:
@@ -46,6 +48,8 @@ Wrangler prints the local URL, normally `http://localhost:8787`.
 2. Uncall `sort4` and verify that the exact input order and zero trace return.
 3. In **Encode and Decode**, call `encode` and watch `HELLO` become `KHOOR`.
 4. Without adding a decoder, uncall `encode` and verify that `HELLO` returns.
+5. In **Encode a Tree Path and Restore It**, select a leaf, call `encode_path`, and watch the cursor move to the root while its route remains in the path stack.
+6. Uncall `encode_path` and verify that the path clears while the cursor returns to the selected leaf.
 
 Run the repository checks with:
 

@@ -37,4 +37,14 @@ describe("Pure Janus reversible sort demo", () => {
       expect(uncallPureSort(PURE_SORT_SOURCE, sorted)).toEqual(initial);
     }
   });
+
+  it("maps an edited forward output to a different input", () => {
+    const sorted = callPureSort(PURE_SORT_SOURCE, INITIAL_PURE_SORT_STATE);
+    const editedOutput = { ...sorted, values: [10, 20, 30, 40] };
+
+    expect(uncallPureSort(PURE_SORT_SOURCE, editedOutput)).toEqual({
+      values: [40, 10, 30, 20],
+      trace: [0, 0, 0, 0, 0],
+    });
+  });
 });
