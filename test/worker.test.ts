@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { createWorker } from "../src/worker";
 
 describe("Cloudflare Worker", () => {
-  const app = createWorker("console.log('browser bundle');");
+  const app = createWorker(
+    "console.log('browser bundle');",
+    "console.log('quantum browser bundle');",
+  );
 
   it("serves the demo shell", async () => {
     const response = await app.request("/");
@@ -26,6 +29,7 @@ describe("Cloudflare Worker", () => {
     expect(html).toContain('data-tree-node="6"');
     expect(html).toContain('data-testid="tree-call"');
     expect(html).toContain("No generated inverse program. The same AST runs backward.");
+    expect(html).toContain('href="/quantum"');
   });
 
   it("serves browser JavaScript", async () => {
@@ -34,6 +38,27 @@ describe("Cloudflare Worker", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/javascript");
     await expect(response.text()).resolves.toContain("browser bundle");
+  });
+
+  it("serves the separate accessible quantum demo and bundle", async () => {
+    const response = await app.request("/quantum");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const html = await response.text();
+    expect(html).toContain("Quantum circuits have a direction.");
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('id="qft-tab"');
+    expect(html).toContain('id="adder-tab"');
+    expect(html).toContain("3-qubit state vector");
+    expect(html).toContain("Logical Toffoli primitives; no Clifford+T decomposition");
+    expect(html).toContain("Halving the cost of quantum addition");
+    expect(html).toContain('src="/quantum/app.js"');
+
+    const bundle = await app.request("/quantum/app.js");
+    expect(bundle.status).toBe(200);
+    expect(bundle.headers.get("content-type")).toContain("text/javascript");
+    await expect(bundle.text()).resolves.toContain("quantum browser bundle");
   });
 
   it("reports deployment health", async () => {

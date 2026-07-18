@@ -7,7 +7,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "build:browser": "esbuild src/browser.ts --bundle --format=iife --platform=browser --target=es2022 --outfile=generated/app.js.txt",
+    "build:browser": "npm run build:main-browser && npm run build:quantum-browser",
+    "build:main-browser": "esbuild src/browser.ts --bundle --format=iife --platform=browser --target=es2022 --outfile=generated/app.js.txt",
+    "build:quantum-browser": "esbuild src/quantum/browser.ts --bundle --format=iife --platform=browser --target=es2022 --outfile=generated/quantum-app.js.txt",
     "deploy": "npm run build:browser && wrangler deploy",
     "dev": "npm run build:browser && wrangler dev",
     "test": "vitest run",

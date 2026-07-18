@@ -59,6 +59,8 @@ export const renderHtml = (): string => `<!doctype html>
       .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 68px; }
       .brand { font: 800 14px/1 ui-monospace, monospace; letter-spacing: .18em; }
       .badge { border: 1px solid var(--line); padding: 8px 11px; color: var(--muted); font: 10px/1 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+      .quantum-link { color: var(--cyan); text-decoration: none; }
+      .quantum-link:hover { border-color: var(--cyan); color: var(--ink); }
       .hero { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(290px,.7fr); gap: 52px; align-items: end; margin-bottom: 52px; }
       .kicker { margin: 0 0 16px; color: var(--acid); font: 700 11px/1.4 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
       h1 { margin: 0; font-size: clamp(56px, 8.5vw, 112px); line-height: .87; letter-spacing: -.07em; }
@@ -233,7 +235,7 @@ export const renderHtml = (): string => `<!doctype html>
     <main class="shell">
       <nav class="topbar" aria-label="Product">
         <span class="brand">UN/CALL</span>
-        <span class="badge">Pure Janus · live evaluator</span>
+        <a class="badge quantum-link" href="/quantum">Quantum demo →</a>
       </nav>
 
       <header class="hero">
