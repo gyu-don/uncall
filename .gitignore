@@ -1,0 +1,6 @@
+node_modules/
+generated/
+.wrangler/
+coverage/
+.dev.vars
+*.log

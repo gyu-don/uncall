@@ -1,0 +1,27 @@
+{
+  "name": "uncall",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:browser": "esbuild src/browser.ts --bundle --format=iife --platform=browser --target=es2022 --outfile=generated/app.js.txt",
+    "deploy": "npm run build:browser && wrangler deploy",
+    "dev": "npm run build:browser && wrangler dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "4.12.30"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260718.1",
+    "esbuild": "0.28.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10",
+    "wrangler": "4.112.0"
+  }
+}
