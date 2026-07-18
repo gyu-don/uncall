@@ -2,70 +2,31 @@
 
 [日本語](README-ja.md)
 
-**Describe an operation once. Undo it later—even from another process.**
+**One program. Both directions.**
 
-UNCALL is an experimental runtime for work that is temporary but must outlive the command that created it. You describe the setup as a sequence of small operations whose setup and undo handlers have already been reviewed. UNCALL records what actually succeeded, derives the reverse order, and leaves an undo plan that another process can inspect and run later.
+UNCALL is an implementation of the reversible programming language Janus. `call` executes a procedure forward; `uncall` executes that same procedure backward. There is no generated or separately implemented decoder, unsorter, or undo program.
 
-## Start with a simple scenario
+The browser demo directly runs this repository's Pure Janus parser, static checker, resolver, and forward/backward evaluator.
 
-Suppose you want to put a temporary copy of an application online so that someone else can try it. The setup needs an isolated namespace, a database, the application, and a public URL:
+## Two demos
 
-```text
-procedure preview_environment()
-    call create_namespace()
-    call create_database()
-    call deploy_application()
-    call attach_preview_url()
+**Reversible Sort** uses five comparators to turn `[4, 1, 3, 2]` into `[1, 2, 3, 4]`, recording the branch history as `trace = [1, 1, 0, 1, 1]`. `uncall sort4` reconstructs the control flow and restores both the original order and the all-zero trace.
+
+**Encode and Decode** defines only an `encode` procedure that shifts five character codes. `call encode` is the encoder; `uncall encode` is the decoder.
+
+```janus
+message[5]
+shift
+
+procedure encode()
+    message[0] += shift
+    message[1] += shift
+    message[2] += shift
+    message[3] += shift
+    message[4] += shift
 ```
 
-The environment should remain available after the setup command exits. Hours or days later, when nobody needs it, a different command should remove it safely.
-
-UNCALL connects those two moments:
-
-```text
-Now / setup command
-  call preview_environment
-  -> create the namespace, database, application, and URL
-  -> save what each successful operation created
-  -> finish the command, but leave the environment online
-
-Later / cleanup command
-  load the saved execution
-  -> show what will be undone
-  -> uncall preview_environment
-  -> detach the URL, undeploy the application, delete the database and namespace
-```
-
-Each completed operation returns the information needed to identify and validate its resource. UNCALL stores those values as **receipts** in an **execution record**. That record lets a fresh runtime instance perform the `uncall` long after the original process has ended.
-
-The included demo labels the two moments “PR opened” and “PR merged,” because a review environment is a familiar example of temporary infrastructure. The Pull Request is only the trigger in this story; UNCALL itself is not tied to GitHub or to preview environments.
-
-## When the scenario changes
-
-Now suppose the application also needs a cache. If `create_cache` is already a trusted primitive, the application change is one line:
-
-```diff
- procedure preview_environment()
-     call create_namespace()
-     call create_database()
-+    call create_cache()
-     call deploy_application()
-     call attach_preview_url()
-```
-
-From that same procedure, the runtime updates the normal undo plan and the cleanup plan for every possible partial failure. There is no second cleanup workflow to keep in sync by hand.
-
-If somebody changes a resource before cleanup, UNCALL does not delete it blindly. It compares the current resource with the saved receipt. On a mismatch it stops, identifies what changed and which undo operations remain, and waits for a manual decision.
-
-This is where UNCALL differs from the usual use of `try/finally`, `with`, or `using`. Those mechanisms normally clean up when the current scope ends. Here, ending the setup scope is intentional: the result stays useful, while an inspectable undo plan is handed to a future event. The same idea can be built with disposables and custom persistence; UNCALL provides a shared model for procedure direction, receipts, validation, and audit history.
-
-> The demo uses mock resources. It does not contact GitHub, Kubernetes, a database service, or a DNS provider.
-
-## A second lens: Pure Janus Lab
-
-The browser now exposes the language runtime itself in a separate **Pure Janus Lab** tab. Its five-comparator sorting network turns `[4, 1, 3, 2]` into `[1, 2, 3, 4]` and records the branch history as `trace = [1, 1, 0, 1, 1]`. Running `uncall sort4` restores both the original ordering and the all-zero trace.
-
-This is exact reversal of pure state, not receipt-based compensation. The UI executes the repository's real parser, static checker, resolver, and forward/backward evaluator. The accompanying test verifies the round trip for all 24 permutations of four distinct values.
+For example, `HELLO` with shift `3` becomes `KHOOR`, and uncalling the same `encode` procedure restores `HELLO`.
 
 ## Try the demo
 
@@ -79,14 +40,12 @@ npm install
 npm run dev
 ```
 
-Wrangler prints the local URL, normally `http://localhost:8787`. In the browser, follow the scenario from start to finish:
+Wrangler prints the local URL, normally `http://localhost:8787`.
 
-1. Compare the original setup with a version that adds a trusted cache operation, and inspect the undo-plan change derived from that one line.
-2. Open the mock PR, finish the setup runtime, and confirm that the preview resources remain online.
-3. Resume the saved execution in a fresh runtime, inspect the receipts, and run `uncall`.
-4. Simulate an external database change and see unsafe cleanup stop with a concrete explanation.
-5. Inject a setup failure and verify that only the operations that succeeded are compensated, in reverse order.
-6. Switch to **Pure Janus Lab**, call `sort4`, inspect the five branch bits, then uncall it and verify the exact initial state returns.
+1. In **Reversible Sort**, call `sort4` and inspect the sorted values and five branch bits.
+2. Uncall `sort4` and verify that the exact input order and zero trace return.
+3. In **Encode and Decode**, call `encode` and watch `HELLO` become `KHOOR`.
+4. Without adding a decoder, uncall `encode` and verify that `HELLO` returns.
 
 Run the repository checks with:
 
