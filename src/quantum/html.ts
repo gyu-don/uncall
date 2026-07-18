@@ -159,8 +159,8 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       .register.is-clean strong { color: var(--green); }
       .editor { border: 1px solid var(--line); background: #080a0b; }
       .editor-bar { padding: 9px 12px; border-bottom: 1px solid var(--line); color: var(--dim); font: 9px/1 ui-monospace,monospace; }
-      .source { display: block; width: 100%; min-height: 305px; margin: 0; border: 0; padding: 15px; resize: vertical; outline: 0; background: transparent; color: #cdd5d7; font: 9px/1.55 "SFMono-Regular",Consolas,monospace; }
-      .adder-source { min-height: 640px; }
+      .source { display: block; width: 100%; min-height: 530px; margin: 0; border: 0; padding: 15px; resize: vertical; outline: 0; background: transparent; color: #cdd5d7; font: 9px/1.55 "SFMono-Regular",Consolas,monospace; }
+      .adder-source { min-height: 330px; }
       .stream-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
       .stream { min-width: 0; border: 1px solid var(--line); background: var(--panel-2); }
       .stream h4 { margin: 0; border-bottom: 1px solid var(--line); padding: 9px; color: var(--muted); font: 9px/1 ui-monospace,monospace; }
@@ -246,8 +246,8 @@ export const renderQuantumHtml = (): string => `<!doctype html>
             </div>
           </section>
           <aside class="side-pane" aria-labelledby="qft-source-title">
-            <div class="section-head"><h3 id="qft-source-title">qft3.janus</h3><span class="tag">fixed source · nested procedures</span></div>
-            <div class="editor"><div class="editor-bar">Qubit operands and phase angles are encoded in primitive names</div><textarea class="source" readonly aria-label="QFT Janus source">${escapeHtml(QFT_SOURCE)}</textarea></div>
+            <div class="section-head"><h3 id="qft-source-title">qft.janus</h3><span class="tag">width-generic loop · specialized to 3</span></div>
+            <div class="editor"><div class="editor-bar"><code>length</code> drives target/control loops; the adapter lowers indices to primitive names</div><textarea class="source" readonly aria-label="QFT Janus source">${escapeHtml(QFT_SOURCE)}</textarea></div>
             <div class="scope"><strong>Simulation scope</strong><br>3-qubit state vector in this browser. This is not execution on quantum hardware.</div>
           </aside>
         </div>
@@ -288,8 +288,8 @@ export const renderQuantumHtml = (): string => `<!doctype html>
             </div>
           </section>
           <aside class="side-pane" aria-labelledby="adder-source-title">
-            <div class="section-head"><h3 id="adder-source-title">add4.janus</h3><span class="tag">fixed 4-bit · one clean ancilla</span></div>
-            <div class="editor"><div class="editor-bar">Nested MAJ / UMA procedures · operands encoded in names</div><textarea class="source adder-source" readonly aria-label="Adder Janus source">${escapeHtml(ADDER_SOURCE)}</textarea></div>
+            <div class="section-head"><h3 id="adder-source-title">add.janus</h3><span class="tag">width-generic loop · specialized to 4</span></div>
+            <div class="editor"><div class="editor-bar"><code>length</code> drives one MAJ and one reverse UMA traversal</div><textarea class="source adder-source" readonly aria-label="Adder Janus source">${escapeHtml(ADDER_SOURCE)}</textarea></div>
             <div class="scope"><strong>Logical Toffoli primitives; no Clifford+T decomposition.</strong><br>Computational-basis-only logical gate simulation. The demo does not reproduce or claim T-count or T-depth savings.</div>
             <p class="citation">Circuit context: Craig Gidney, <a href="https://doi.org/10.22331/q-2018-06-18-74" rel="external">Halving the cost of quantum addition</a> (<a href="https://arxiv.org/abs/1709.06648" rel="external">arXiv:1709.06648</a>). This demo stays at the reversible logical-adder level.</p>
           </aside>

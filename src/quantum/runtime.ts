@@ -1,6 +1,7 @@
 import { compileHostModule, HostExecutor } from "../host";
 import {
   ADDER_GATE_DEFINITIONS,
+  ADDER_HOST_SOURCE,
   ADDER_PROCEDURE,
   ADDER_SOURCE,
   ADDER_WIRES,
@@ -17,6 +18,7 @@ import {
 } from "./gates";
 import {
   QFT_GATE_DEFINITIONS,
+  QFT_HOST_SOURCE,
   QFT_PROCEDURE,
   QFT_SOURCE,
   QFT_WIRES,
@@ -249,7 +251,7 @@ export class QftDemoRuntime {
       },
     };
     this.#runtime = new QuantumProcedureRuntime({
-      source: QFT_SOURCE,
+      source: QFT_HOST_SOURCE,
       procedure: QFT_PROCEDURE,
       catalog: new QuantumGateCatalog(QFT_WIRES, QFT_GATE_DEFINITIONS),
       simulator,
@@ -336,7 +338,7 @@ export class AdderDemoRuntime {
       },
     };
     this.#runtime = new QuantumProcedureRuntime({
-      source: ADDER_SOURCE,
+      source: ADDER_HOST_SOURCE,
       procedure: ADDER_PROCEDURE,
       catalog: new QuantumGateCatalog(ADDER_WIRES, ADDER_GATE_DEFINITIONS),
       simulator,

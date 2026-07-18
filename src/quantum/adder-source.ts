@@ -1,73 +1,51 @@
 import type { QuantumGateDefinition, QubitId } from "./gates";
 
-export const ADDER_PROCEDURE = "add4";
-export const ADDER_WIRES = [
-  "a0",
-  "a1",
-  "a2",
-  "a3",
-  "b0",
-  "b1",
-  "b2",
-  "b3",
-  "c0",
-] as const satisfies readonly QubitId[];
+export const ADDER_PROCEDURE = "add";
+export const ADDER_WIDTH = 4;
 
-export const ADDER_SOURCE = `procedure add4()
-    call carry_chain()
-    call sum_chain()
+/**
+ * Width-generic Janus algorithm. `maj_at_index` and `uma_at_index` are
+ * index-aware adapter primitives that are specialized to concrete logical
+ * CNOT/Toffoli calls before the calls-only HostExecutor runs the UI circuit.
+ */
+export const ADDER_SOURCE = `length index
 
-procedure carry_chain()
-    call maj_0()
-    call maj_1()
-    call maj_2()
-    call maj_3()
+procedure add()
+    if length > 0 then
+        from index = 0 do
+            call maj_at_index()
+        loop
+            index += 1
+        until index = (length - 1)
 
-procedure sum_chain()
-    call uma_3()
-    call uma_2()
-    call uma_1()
-    call uma_0()
+        from index = (length - 1) do
+            call uma_at_index()
+        loop
+            index -= 1
+        until index = 0
+    else skip
+    fi length > 0`;
 
-procedure maj_0()
-    call cx_a0_b0()
-    call cx_a0_c0()
-    call ccx_c0_b0_a0()
+const checkedWidth = (width: number): number => {
+  if (!Number.isSafeInteger(width) || width < 1 || width > 30) {
+    throw new RangeError("Adder specialization width must be from 1 to 30.");
+  }
+  return width;
+};
 
-procedure maj_1()
-    call cx_a1_b1()
-    call cx_a1_a0()
-    call ccx_a0_b1_a1()
+export const adderWires = (width: number): readonly QubitId[] => {
+  checkedWidth(width);
+  return [
+    ...Array.from({ length: width }, (_, bit) => `a${bit}`),
+    ...Array.from({ length: width }, (_, bit) => `b${bit}`),
+    "c0",
+  ];
+};
 
-procedure maj_2()
-    call cx_a2_b2()
-    call cx_a2_a1()
-    call ccx_a1_b2_a2()
+export const ADDER_WIRES = adderWires(ADDER_WIDTH);
 
-procedure maj_3()
-    call cx_a3_b3()
-    call cx_a3_a2()
-    call ccx_a2_b3_a3()
-
-procedure uma_3()
-    call ccx_a2_b3_a3()
-    call cx_a3_a2()
-    call cx_a2_b3()
-
-procedure uma_2()
-    call ccx_a1_b2_a2()
-    call cx_a2_a1()
-    call cx_a1_b2()
-
-procedure uma_1()
-    call ccx_a0_b1_a1()
-    call cx_a1_a0()
-    call cx_a0_b1()
-
-procedure uma_0()
-    call ccx_c0_b0_a0()
-    call cx_a0_c0()
-    call cx_c0_b0()`;
+const previousCarry = (bit: number): QubitId =>
+  bit === 0 ? "c0" : `a${bit - 1}`;
 
 const cx = (control: QubitId, target: QubitId): QuantumGateDefinition => ({
   name: `cx_${control}_${target}`,
@@ -83,21 +61,65 @@ const ccx = (
   gate: { kind: "ccx", controls: [first, second], target },
 });
 
-export const ADDER_GATE_DEFINITIONS: readonly QuantumGateDefinition[] = [
-  cx("a0", "b0"),
-  cx("a0", "c0"),
-  ccx("c0", "b0", "a0"),
-  cx("a1", "b1"),
-  cx("a1", "a0"),
-  ccx("a0", "b1", "a1"),
-  cx("a2", "b2"),
-  cx("a2", "a1"),
-  ccx("a1", "b2", "a2"),
-  cx("a3", "b3"),
-  cx("a3", "a2"),
-  ccx("a2", "b3", "a3"),
-  cx("a2", "b3"),
-  cx("a1", "b2"),
-  cx("a0", "b1"),
-  cx("c0", "b0"),
-];
+const majorityDefinitions = (bit: number): readonly QuantumGateDefinition[] => {
+  const a = `a${bit}`;
+  const b = `b${bit}`;
+  const carry = previousCarry(bit);
+  return [cx(a, b), cx(a, carry), ccx(carry, b, a)];
+};
+
+const unmajorityDefinitions = (bit: number): readonly QuantumGateDefinition[] => {
+  const a = `a${bit}`;
+  const b = `b${bit}`;
+  const carry = previousCarry(bit);
+  return [ccx(carry, b, a), cx(a, carry), cx(carry, b)];
+};
+
+export const adderGateDefinitions = (
+  width: number,
+): readonly QuantumGateDefinition[] => {
+  checkedWidth(width);
+  const unique = new Map<string, QuantumGateDefinition>();
+  for (let bit = 0; bit < width; bit += 1) {
+    for (const definition of majorityDefinitions(bit)) {
+      unique.set(definition.name, definition);
+    }
+    for (const definition of unmajorityDefinitions(bit)) {
+      unique.set(definition.name, definition);
+    }
+  }
+  return [...unique.values()];
+};
+
+export const ADDER_GATE_DEFINITIONS = adderGateDefinitions(ADDER_WIDTH);
+
+const callsFor = (definitions: readonly QuantumGateDefinition[]): string =>
+  definitions.map(({ name }) => `    call ${name}()`).join("\n");
+
+/** Specializes the loop/index operations above to today's fixed UI width. */
+export const specializeAdderSource = (width: number): string => {
+  checkedWidth(width);
+  const carryCalls = Array.from(
+    { length: width },
+    (_, bit) => `    call maj_${bit}()`,
+  );
+  const sumCalls = Array.from(
+    { length: width },
+    (_, offset) => `    call uma_${width - offset - 1}()`,
+  );
+  const bitProcedures: string[] = [];
+  for (let bit = 0; bit < width; bit += 1) {
+    bitProcedures.push(
+      `procedure maj_${bit}()\n${callsFor(majorityDefinitions(bit))}`,
+      `procedure uma_${bit}()\n${callsFor(unmajorityDefinitions(bit))}`,
+    );
+  }
+  return [
+    `procedure ${ADDER_PROCEDURE}()\n    call carry_chain()\n    call sum_chain()`,
+    `procedure carry_chain()\n${carryCalls.join("\n")}`,
+    `procedure sum_chain()\n${sumCalls.join("\n")}`,
+    ...bitProcedures,
+  ].join("\n\n");
+};
+
+export const ADDER_HOST_SOURCE = specializeAdderSource(ADDER_WIDTH);
