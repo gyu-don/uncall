@@ -2,7 +2,13 @@
 
 ## Status
 
-Accepted
+Accepted — Implemented
+
+## Current state
+
+Level 0〜3は実装済みである。`src/janus`はscalar、固定長array、式、可逆update、swap、exit assertion付き`if`、可逆loop、再帰、canonical / Janus86構文profileを実装している。公開されたJanus86の因数分解sampleを含むround-trip testも通過している。
+
+Pure Janusと非同期host effectを別layerにする境界も維持されている。両者のstructured controlを混在させる場合は、本ADRの実装済み範囲の延長とは扱わず、別ADRで判断する。
 
 ## Date
 

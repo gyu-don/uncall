@@ -2,7 +2,13 @@
 
 ## Status
 
-Accepted with conditions
+Accepted — Implemented
+
+## Current state
+
+Phase 0〜2は完了している。ブラウザデモはCloudflare Workers向けに構成され、固定`demoPlan`ではなく、parser、AST、linker、direction-aware evaluatorからforward / backward planを導出する。
+
+その後のJanus86 clean coreへの拡張はADR002、headline demoの拡張はADR003を正とする。本文のphase計画と見積もりは、実装に至った履歴として残す。
 
 ## ADR000との関係
 
@@ -278,4 +284,3 @@ ASTを実行するevaluatorを作り、Phase 0の`demoPlan`を削除する。
 この計画では、最初の1セッションでJanus言語としての正しさは証明できない。Phase 0のコード表示は、あくまで将来の操作モデルを説明するもので、実行されるsourceではない。この点はUIとREADMEで明示する。
 
 一方で、モックを初期MVPの完成とは扱わず、固定配列を削除するまでを完了条件に含める。これにより、早く価値を見せることと、Janus処理系を実際に作ることの両方を初期計画に含める。
-
