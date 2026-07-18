@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   compileHostModule,
+  deriveHostPlan,
   HostCompileError,
   HostExecutor,
+  hostPlanHash,
   PrimitiveRegistry,
   ReceiptJournal,
   type HostPrimitive,
@@ -120,6 +122,34 @@ procedure second()
 });
 
 describe("HostExecutor", () => {
+  it("derives forward and backward primitive plans from the same procedure", () => {
+    const harness = createHarness(["one", "two", "three"]);
+    const module = compileHostModule(
+      `procedure deploy()
+  call one()
+  call nested()
+procedure nested()
+  call two()
+  call three()`,
+      harness.registry,
+    );
+
+    const forward = deriveHostPlan(module, "deploy", "forward");
+    const backward = deriveHostPlan(module, "deploy", "backward");
+
+    expect(forward).toEqual([
+      { primitiveName: "one", direction: "forward" },
+      { primitiveName: "two", direction: "forward" },
+      { primitiveName: "three", direction: "forward" },
+    ]);
+    expect(backward).toEqual([
+      { primitiveName: "three", direction: "backward" },
+      { primitiveName: "two", direction: "backward" },
+      { primitiveName: "one", direction: "backward" },
+    ]);
+    expect(hostPlanHash("deploy", forward, backward)).toMatch(/^fnv1a-/u);
+  });
+
   it("executes primitive forward handlers in AST order and top-level uncall in reverse", async () => {
     const harness = createHarness(["one", "two", "three"]);
     const module = compileHostModule(
@@ -294,6 +324,64 @@ procedure wrong()
       journalSize: 1,
     });
     expect(sharedJournal.length).toBe(1);
+  });
+
+  it("restores a serialized receipt journal in a later executor", async () => {
+    const harness = createHarness(["one", "two"]);
+    const module = compileHostModule(
+      "procedure deploy()\ncall one()\ncall two()",
+      harness.registry,
+    );
+    const first = new HostExecutor(module, harness.registry, {
+      sessionId: "durable-session",
+    });
+    expect((await first.call("deploy")).status).toBe("succeeded");
+
+    const serialized = JSON.stringify(first.journal.entries);
+    const restoredJournal = new ReceiptJournal(
+      JSON.parse(serialized) as typeof first.journal.entries,
+    );
+    const later = new HostExecutor(module, harness.registry, {
+      sessionId: "durable-session",
+      journal: restoredJournal,
+    });
+
+    await expect(later.uncallRecorded()).resolves.toMatchObject({
+      status: "succeeded",
+      journalSize: 0,
+    });
+    expect(harness.log).toEqual([
+      "forward:one",
+      "forward:two",
+      "backward:two",
+      "backward:one",
+    ]);
+  });
+
+  it("continues recorded cleanup after a backward handler was blocked", async () => {
+    const harness = createHarness(["one", "two", "three"]);
+    harness.failBackward.add("two");
+    const module = compileHostModule(
+      "procedure deploy()\ncall one()\ncall two()\ncall three()",
+      harness.registry,
+    );
+    const executor = new HostExecutor(module, harness.registry);
+    expect((await executor.call("deploy")).status).toBe("succeeded");
+
+    await expect(executor.uncallRecorded()).resolves.toMatchObject({
+      status: "failed",
+      journalSize: 2,
+    });
+    expect(executor.journal.entries.map((entry) => entry.primitiveName)).toEqual([
+      "one",
+      "two",
+    ]);
+
+    harness.failBackward.clear();
+    await expect(executor.uncallRecorded()).resolves.toMatchObject({
+      status: "succeeded",
+      journalSize: 0,
+    });
   });
 
   it("rejects concurrent execution in the same session", async () => {

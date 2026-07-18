@@ -9,13 +9,16 @@ describe("parse", () => {
     expect(module.procedures).toHaveLength(1);
     expect(module.procedures[0]).toMatchObject({
       kind: "ProcedureDeclaration",
-      name: "deploy",
+      name: "preview_environment",
       body: [
-        { kind: "CallStatement", callKind: "call", name: "create_network" },
+        { kind: "CallStatement", callKind: "call", name: "create_namespace" },
         { kind: "CallStatement", callKind: "call", name: "create_database" },
+        { kind: "CallStatement", callKind: "call", name: "create_cache" },
+        { kind: "CallStatement", callKind: "call", name: "seed_preview_data" },
         { kind: "CallStatement", callKind: "call", name: "deploy_application" },
+        { kind: "CallStatement", callKind: "call", name: "attach_preview_url" },
       ],
-      span: { start: { line: 1, column: 1 }, end: { line: 4, column: 30 } },
+      span: { start: { line: 1, column: 1 }, end: { line: 7, column: 30 } },
     });
   });
 

@@ -21,7 +21,17 @@ export type ReceiptJournalEntry = {
 };
 
 export class ReceiptJournal {
-  readonly #entries: ReceiptJournalEntry[] = [];
+  readonly #entries: ReceiptJournalEntry[];
+
+  constructor(entries: readonly ReceiptJournalEntry[] = []) {
+    this.#entries = entries.map((entry) => ({
+      ...entry,
+      span: {
+        start: { ...entry.span.start },
+        end: { ...entry.span.end },
+      },
+    }));
+  }
 
   get length(): number {
     return this.#entries.length;
@@ -111,6 +121,61 @@ export class HostExecutor {
 
   uncall(procedureName: string): Promise<HostExecutionResult> {
     return this.execute(procedureName, "backward");
+  }
+
+  /**
+   * Replays the serialized receipt stack in reverse. This is the durable
+   * counterpart of `uncall`: a later executor can continue after a previous
+   * process ended, or after a checked backward operation was blocked.
+   */
+  async uncallRecorded(): Promise<HostExecutionResult> {
+    if (this.#isExecuting) {
+      const error = new HostRuntimeError(
+        "The host executor is already executing",
+        this.module.span,
+        "concurrent-execution",
+      );
+      return {
+        status: "failed",
+        error,
+        cleanupErrors: [],
+        journalSize: this.journal.length,
+      };
+    }
+
+    this.#isExecuting = true;
+    const runId = this.#nextRunId++;
+    try {
+      while (true) {
+        const entry = this.journal.peek();
+        if (entry === undefined) break;
+        await this.#executePrimitive(
+          entry.primitiveName,
+          "backward",
+          entry.span,
+          runId,
+        );
+      }
+      return { status: "succeeded", journalSize: 0 };
+    } catch (error) {
+      const runtimeError =
+        error instanceof HostRuntimeError
+          ? error
+          : new HostRuntimeError(
+              errorMessage(error),
+              this.module.span,
+              "primitive-failed",
+              { cause: error },
+            );
+      return {
+        status: "failed",
+        error: runtimeError,
+        cleanupErrors: [],
+        journalSize: this.journal.length,
+      };
+    } finally {
+      this.#isExecuting = false;
+    }
   }
 
   async execute(

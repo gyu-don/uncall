@@ -12,7 +12,8 @@ describe("Cloudflare Worker", () => {
     const html = await response.text();
     expect(html).toContain("UNCALL");
     expect(html).toContain('<textarea class="source-editor" id="source"');
-    expect(html).toContain("Phase 2 · host");
+    expect(html).toContain("Pure Janus Lab");
+    expect(html).toContain("Pure Janus evaluator + Phase 2 host runtime");
   });
 
   it("serves browser JavaScript", async () => {

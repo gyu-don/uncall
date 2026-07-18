@@ -61,6 +61,12 @@ This is where UNCALL differs from the usual use of `try/finally`, `with`, or `us
 
 > The demo uses mock resources. It does not contact GitHub, Kubernetes, a database service, or a DNS provider.
 
+## A second lens: Pure Janus Lab
+
+The browser now exposes the language runtime itself in a separate **Pure Janus Lab** tab. Its five-comparator sorting network turns `[4, 1, 3, 2]` into `[1, 2, 3, 4]` and records the branch history as `trace = [1, 1, 0, 1, 1]`. Running `uncall sort4` restores both the original ordering and the all-zero trace.
+
+This is exact reversal of pure state, not receipt-based compensation. The UI executes the repository's real parser, static checker, resolver, and forward/backward evaluator. The accompanying test verifies the round trip for all 24 permutations of four distinct values.
+
 ## Try the demo
 
 Requirements:
@@ -80,6 +86,7 @@ Wrangler prints the local URL, normally `http://localhost:8787`. In the browser,
 3. Resume the saved execution in a fresh runtime, inspect the receipts, and run `uncall`.
 4. Simulate an external database change and see unsafe cleanup stop with a concrete explanation.
 5. Inject a setup failure and verify that only the operations that succeeded are compensated, in reverse order.
+6. Switch to **Pure Janus Lab**, call `sort4`, inspect the five branch bits, then uncall it and verify the exact initial state returns.
 
 Run the repository checks with:
 
