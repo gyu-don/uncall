@@ -125,3 +125,13 @@ npm run deploy
 Deployment uses Cloudflare Workers. Local or CI deployment needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; keep both in environment variables or repository secrets, never in source. The health endpoint is `/health`.
 
 Design decisions and scope are documented in [ADR002: Janus86 clean core](adr/ADR002-Janus86実装範囲.md) and [ADR003: reversible-by-construction demo](adr/ADR003-刺さるデモシナリオ.md).
+
+## License
+
+UNCALL is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+Noncommercial use, modification, and distribution are permitted subject to the license terms. Commercial use requires a separate commercial license from the repository owner.
+
+For the OpenAI Build Week Sponsor, Administrator, and Judges, additional permission for testing and evaluation is provided in [LICENSE-BUILD-WEEK-EXCEPTION.md](LICENSE-BUILD-WEEK-EXCEPTION.md).
+
+Because commercial use is restricted, UNCALL is not described as open-source software under the Open Source Initiative definition. Third-party components remain subject to their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

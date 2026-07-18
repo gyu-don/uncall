@@ -125,3 +125,13 @@ npm run deploy
 デプロイ先はCloudflare Workersです。ローカルまたはCIからのデプロイには`CLOUDFLARE_API_TOKEN`と`CLOUDFLARE_ACCOUNT_ID`が必要です。値は環境変数かリポジトリのsecretへ置き、ソースにはコミットしないでください。ヘルスチェック用のエンドポイントは`/health`です。
 
 設計上の判断と対象範囲は、[ADR002: Janus86 clean core](adr/ADR002-Janus86実装範囲.md)と[ADR003: reversible-by-construction demo](adr/ADR003-刺さるデモシナリオ.md)に記録しています。
+
+## ライセンス
+
+UNCALLは[PolyForm Noncommercial License 1.0.0](LICENSE)の下で公開するsource-available softwareです。
+
+ライセンス条件に従う限り、非商用の利用・改変・再配布が許可されます。商用利用にはリポジトリ所有者との別途商用ライセンスが必要です。
+
+OpenAI Build WeekのSponsor、Administrator、Judgesによる審査・評価・テストについては、[LICENSE-BUILD-WEEK-EXCEPTION.md](LICENSE-BUILD-WEEK-EXCEPTION.md)で追加の許諾を定めています。
+
+商用利用を制限しているため、OSIの定義におけるオープンソースソフトウェアとは表記していません。第三者コンポーネントはそれぞれのライセンスに従います。詳細は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)を参照してください。
