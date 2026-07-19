@@ -59,10 +59,10 @@ const selectDemo = (selected: DemoName): void => {
   treePanel.hidden = !treeSelected;
   demoExplainer.innerHTML =
     selected === "sort"
-      ? "<strong>同じsortを両方向に実行します。</strong> <code>length</code>回の入力を可逆な二重ループで並べ、<code>uncall</code>はtraceから元の制御フローを復元します。"
+      ? "<strong>Run the same sort in both directions.</strong> A reversible nested loop orders <code>length</code> inputs; <code>uncall</code> reconstructs the original control flow from the trace."
       : selected === "codec"
-        ? "<strong>encodeしか書きません。</strong> <code>call encode</code>後の暗号文は編集可能です。<code>uncall encode</code>は変更後の暗号文から、同じprogramの逆実行で別の平文を求めます。"
-        : "<strong>葉の位置をpathへ移します。</strong> <code>call encode_path</code>はループでrootへ上がり、<code>uncall</code>はbitをpopしながら同じ木を葉まで降ります。";
+        ? "<strong>Write only the encoder.</strong> The ciphertext remains editable after <code>call encode</code>; <code>uncall encode</code> runs the same program backward from the edited value."
+        : "<strong>Move a leaf position into a path.</strong> <code>call encode_path</code> climbs to the root; edit its path bits, then <code>uncall</code> pops them while descending the same tree.";
 };
 
 sortTab.addEventListener("click", () => selectDemo("sort"));
@@ -399,6 +399,9 @@ const treeEdgeLabels = [
 const treePathSlots = [
   ...document.querySelectorAll<HTMLElement>("[data-tree-path]"),
 ];
+const treePathBits = [
+  ...document.querySelectorAll<HTMLButtonElement>("[data-tree-path-bit]"),
+];
 
 const TREE_SYMBOLS: Readonly<Record<number, string>> = {
   0: "ROOT",
@@ -454,8 +457,9 @@ const renderTree = (): void => {
 
   treePathSlots.forEach((slot, index) => {
     const used = index < treeState.depth;
-    const value = slot.querySelector<HTMLElement>("strong");
+    const value = slot.querySelector<HTMLButtonElement>("[data-tree-path-bit]");
     if (value !== null) value.textContent = used ? String(treeState.path[index]) : "·";
+    if (value !== null) value.disabled = treePhase !== "called" || !used;
     slot.classList.toggle("is-used", used);
   });
 
@@ -466,7 +470,8 @@ const renderTree = (): void => {
   treeTempRegister.classList.toggle("is-clean", treeState.temp === 0);
   treeRoute.textContent = treePhase === "called" ? treePathCode(treeState) : "—";
   treeProofSymbol.textContent = symbol;
-  treeProofResult.textContent = symbol;
+  treeProofResult.textContent =
+    treePhase === "restored" ? treeSymbol(treeState.node) : symbol;
   treePhaseLabel.textContent = treePhase;
   treeSource.disabled = treePhase === "called";
   treeCallButton.disabled = treePhase === "called";
@@ -508,7 +513,7 @@ treeCallButton.addEventListener("click", () => {
     treeState = callTreePathEncode(treeSource.value, treeInitialState);
     treePhase = "called";
     treeStatus.className = "status";
-    treeStatus.innerHTML = `<strong>Encoded ${treeSymbol(selectedTreeLeaf)} → ${treePathCode(treeState)}.</strong> The cursor climbed ${treeState.depth} edge${treeState.depth === 1 ? "" : "s"}; temp returned to zero.`;
+    treeStatus.innerHTML = `<strong>Encoded ${treeSymbol(selectedTreeLeaf)} → ${treePathCode(treeState)}.</strong> The cursor climbed ${treeState.depth} edge${treeState.depth === 1 ? "" : "s"}; temp returned to zero. Toggle a cyan path bit before Uncall if desired.`;
   } catch (error) {
     treePhase = "error";
     treeStatus.className = "status is-error";
@@ -519,20 +524,44 @@ treeCallButton.addEventListener("click", () => {
 
 treeUncallButton.addEventListener("click", () => {
   try {
-    const restored = uncallTreePathEncode(treeSource.value, treeState);
+    const backwardInput: PureTreeCodecState = {
+      ...treeState,
+      path: treePathBits.map((bit, index) =>
+        index < treeState.depth ? Number(bit.textContent) : 0,
+      ),
+    };
+    const outputEdited =
+      JSON.stringify(backwardInput.path) !== JSON.stringify(treeState.path);
+    const restored = uncallTreePathEncode(treeSource.value, backwardInput);
     const verified = JSON.stringify(restored) === JSON.stringify(treeInitialState);
     treeState = restored;
     treePhase = "restored";
-    treeStatus.className = verified ? "status is-verified" : "status is-error";
-    treeStatus.innerHTML = verified
-      ? `<strong>Exact leaf restored.</strong> Uncall popped the route back to ${treeSymbol(restored.node)}; path, depth, and temp are zero again.`
-      : "<strong>Round trip mismatch.</strong> The edited program did not restore the original tree state.";
+    treeStatus.className = "status is-verified";
+    treeStatus.innerHTML = outputEdited
+      ? `<strong>Backward from edited path.</strong> Uncall mapped it to ${treeSymbol(restored.node)} instead of ${treeSymbol(treeInitialState.node)}; path, depth, and temp are zero again.`
+      : verified
+        ? `<strong>Exact leaf restored.</strong> Uncall popped the route back to ${treeSymbol(restored.node)}; path, depth, and temp are zero again.`
+        : "<strong>Backward complete.</strong> The result differs from the original leaf.";
+    treeProofResult.textContent = treeSymbol(restored.node);
   } catch (error) {
     treeStatus.className = "status is-error";
     treeStatus.textContent = `Backward rejected this state: ${error instanceof Error ? error.message : String(error)}`;
     return;
   }
   renderTree();
+});
+
+treePathBits.forEach((bit) => {
+  bit.addEventListener("click", () => {
+    if (treePhase !== "called") return;
+    const index = Number(bit.dataset.treePathBit);
+    const path = [...treeState.path];
+    path[index] = path[index] === 0 ? 1 : 0;
+    treeState = { ...treeState, path };
+    treeStatus.className = "status";
+    treeStatus.innerHTML = `<strong>Output edited.</strong> Uncall will descend route ${treePathCode(treeState)}.`;
+    renderTree();
+  });
 });
 
 treeResetButton.addEventListener("click", () => {

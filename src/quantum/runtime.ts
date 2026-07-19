@@ -138,9 +138,11 @@ class QuantumProcedureRuntime<Snapshot> {
   }
 
   async call(): Promise<void> {
-    if (this.#phase !== "ready") {
-      throw new Error("Reset the quantum demo before calling it again.");
+    if (this.#phase !== "ready" && this.#phase !== "restored") {
+      throw new Error("Uncall the quantum procedure before calling it again.");
     }
+    this.#forwardSteps.length = 0;
+    this.#backwardSteps.length = 0;
     this.#phase = "running-forward";
     this.#error = undefined;
     this.#notify();
@@ -177,6 +179,14 @@ class QuantumProcedureRuntime<Snapshot> {
     } catch (error) {
       this.#fail(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  editCalledOutput(edit: () => void): void {
+    if (this.#phase !== "called") {
+      throw new Error("Call the quantum procedure before editing its output.");
+    }
+    edit();
+    this.#notify();
   }
 
   async #emit(emission: QuantumGateEmission): Promise<void> {
@@ -216,6 +226,7 @@ class QuantumProcedureRuntime<Snapshot> {
 
 export type QftRuntimeSnapshot = {
   readonly input: number;
+  readonly outputInput: number;
   readonly phase: QuantumRuntimePhase;
   readonly amplitudes: readonly ComplexAmplitude[];
   readonly norm: number;
@@ -231,14 +242,16 @@ type QftSimulationSnapshot = {
 };
 
 export class QftDemoRuntime {
-  readonly input: number;
   readonly source = QFT_SOURCE;
   readonly wires = QFT_WIRES;
   readonly #stateVector: QftStateVector;
   readonly #runtime: QuantumProcedureRuntime<QftSimulationSnapshot>;
+  #input: number;
+  #outputInput: number;
 
   constructor(input: number, options: QuantumRuntimeOptions = {}) {
-    this.input = input;
+    this.#input = input;
+    this.#outputInput = input;
     this.#stateVector = new QftStateVector(input);
     const stateVector = this.#stateVector;
     const simulator: Simulator<QftSimulationSnapshot> = {
@@ -272,7 +285,7 @@ export class QftDemoRuntime {
           throw new Error("Restored QFT state-vector norm is not one.");
         }
         amplitudes.forEach(({ basis, probability }) => {
-          const expected = basis === input ? 1 : 0;
+          const expected = basis === this.#outputInput ? 1 : 0;
           if (Math.abs(probability - expected) > 1e-10) {
             throw new Error("Inverse QFT did not restore the input basis state.");
           }
@@ -283,6 +296,10 @@ export class QftDemoRuntime {
   }
 
   call(): Promise<void> {
+    if (this.#runtime.phase === "restored") {
+      this.#input = this.#outputInput;
+    }
+    this.#outputInput = this.#input;
     return this.#runtime.call();
   }
 
@@ -290,12 +307,20 @@ export class QftDemoRuntime {
     return this.#runtime.uncall();
   }
 
+  editCalledOutput(input: number): void {
+    this.#runtime.editCalledOutput(() => {
+      this.#stateVector.setQftOutput(input);
+      this.#outputInput = input;
+    });
+  }
+
   getSnapshot(): QftRuntimeSnapshot {
     const simulation = this.#runtime.simulatorSnapshot;
     const currentStep = this.#runtime.currentStep;
     const error = this.#runtime.error;
     return {
-      input: this.input,
+      input: this.#runtime.phase === "restored" ? this.#outputInput : this.#input,
+      outputInput: this.#outputInput,
       phase: this.#runtime.phase,
       amplitudes: simulation.amplitudes.map((amplitude) => ({ ...amplitude })),
       norm: simulation.norm,
@@ -320,15 +345,17 @@ export type AdderRuntimeSnapshot = {
 
 export class AdderDemoRuntime {
   readonly inputA: number;
-  readonly inputB: number;
   readonly source = ADDER_SOURCE;
   readonly wires = ADDER_WIRES;
   readonly #basis: AdderBasisSimulator;
   readonly #runtime: QuantumProcedureRuntime<AdderBasisSnapshot>;
+  #inputB: number;
+  #outputB: number;
 
   constructor(inputA: number, inputB: number, options: QuantumRuntimeOptions = {}) {
     this.inputA = inputA;
-    this.inputB = inputB;
+    this.#inputB = inputB;
+    this.#outputB = (inputA + inputB) % 16;
     this.#basis = new AdderBasisSimulator(inputA, inputB);
     const basis = this.#basis;
     const simulator: Simulator<AdderBasisSnapshot> = {
@@ -346,7 +373,7 @@ export class AdderDemoRuntime {
         if (snapshot.a !== inputA) {
           throw new Error("Adder changed register a.");
         }
-        if (snapshot.b !== (inputA + inputB) % 16) {
+        if (snapshot.b !== (inputA + this.#inputB) % 16) {
           throw new Error("Adder produced the wrong modulo-16 sum.");
         }
         if (snapshot.ancilla !== 0) {
@@ -356,7 +383,7 @@ export class AdderDemoRuntime {
       validateRestored: (snapshot) => {
         if (
           snapshot.a !== inputA ||
-          snapshot.b !== inputB ||
+          snapshot.b !== this.expectedRestoredB ||
           snapshot.ancilla !== 0
         ) {
           throw new Error("Inverse adder did not restore the full basis state.");
@@ -367,6 +394,10 @@ export class AdderDemoRuntime {
   }
 
   call(): Promise<void> {
+    if (this.#runtime.phase === "restored") {
+      this.#inputB = this.expectedRestoredB;
+    }
+    this.#outputB = (this.inputA + this.#inputB) % 16;
     return this.#runtime.call();
   }
 
@@ -374,12 +405,26 @@ export class AdderDemoRuntime {
     return this.#runtime.uncall();
   }
 
+  editCalledOutputB(value: number): void {
+    this.#runtime.editCalledOutput(() => {
+      this.#basis.setOutputB(value);
+      this.#outputB = value;
+    });
+  }
+
+  private get expectedRestoredB(): number {
+    return (this.#outputB - this.inputA + 16) % 16;
+  }
+
   getSnapshot(): AdderRuntimeSnapshot {
     const currentStep = this.#runtime.currentStep;
     const error = this.#runtime.error;
     return {
       inputA: this.inputA,
-      inputB: this.inputB,
+      inputB:
+        this.#runtime.phase === "restored"
+          ? this.expectedRestoredB
+          : this.#inputB,
       phase: this.#runtime.phase,
       basis: this.#runtime.simulatorSnapshot,
       forwardSteps: this.#runtime.forwardSteps,

@@ -50,6 +50,16 @@ export class AdderBasisSimulator {
     }
   }
 
+  setOutputB(value: number): void {
+    checkedInput("Adder output b", value);
+    if (this.#read("c0") !== 0) {
+      throw new Error("Adder output can only be edited with a clean carry ancilla.");
+    }
+    for (let bit = 0; bit < 4; bit += 1) {
+      this.#bits.set(`b${bit}`, ((value >> bit) & 1) as 0 | 1);
+    }
+  }
+
   get snapshot(): AdderBasisSnapshot {
     const bits = Object.fromEntries(this.#bits) as Record<QubitId, 0 | 1>;
     return {

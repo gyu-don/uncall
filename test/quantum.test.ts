@@ -95,6 +95,28 @@ describe("three-qubit QFT", () => {
       );
     });
   });
+
+  it("uncalls from an edited phase output and can be called again", async () => {
+    const runtime = new QftDemoRuntime(5);
+    await runtime.call();
+    runtime.editCalledOutput(2);
+    await runtime.uncall();
+
+    const edited = runtime.getSnapshot();
+    expect(edited.phase).toBe("restored");
+    expect(edited.input).toBe(2);
+    edited.amplitudes.forEach(({ basis, probability }) => {
+      expectClose(probability, basis === 2 ? 1 : 0);
+    });
+
+    await runtime.call();
+    expect(runtime.getSnapshot()).toMatchObject({
+      phase: "called",
+      input: 2,
+      outputInput: 2,
+    });
+    expect(runtime.getSnapshot().forwardSteps).toHaveLength(7);
+  });
 });
 
 describe("four-bit Cuccaro-style logical Toffoli adder", () => {
@@ -131,6 +153,29 @@ describe("four-bit Cuccaro-style logical Toffoli adder", () => {
       expect(quantumGateEqual(gate, corresponding?.gate as QuantumGate)).toBe(true);
       expect(["cx", "ccx"]).toContain(gate.kind);
     });
+  });
+
+  it("subtracts from an edited sum and can be called again", async () => {
+    const runtime = new AdderDemoRuntime(5, 11);
+    await runtime.call();
+    runtime.editCalledOutputB(7);
+    await runtime.uncall();
+
+    expect(runtime.getSnapshot()).toMatchObject({
+      phase: "restored",
+      inputA: 5,
+      inputB: 2,
+      basis: { a: 5, b: 2, ancilla: 0 },
+    });
+
+    await runtime.call();
+    expect(runtime.getSnapshot()).toMatchObject({
+      phase: "called",
+      inputA: 5,
+      inputB: 2,
+      basis: { a: 5, b: 7, ancilla: 0 },
+    });
+    expect(runtime.getSnapshot().forwardSteps).toHaveLength(24);
   });
 });
 

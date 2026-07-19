@@ -42,4 +42,16 @@ describe("Pure Janus tree path codec demo", () => {
     expect(treePathCode(encoded)).toBe(route);
     expect(uncallTreePathEncode(PURE_TREE_CODEC_SOURCE, encoded)).toEqual(initial);
   });
+
+  it("decodes an edited forward output into a different leaf", () => {
+    const encodedC = callTreePathEncode(
+      PURE_TREE_CODEC_SOURCE,
+      treeCodecStateForLeaf(5),
+    );
+    const editedToD = { ...encodedC, path: [1, 1, 1] };
+
+    expect(uncallTreePathEncode(PURE_TREE_CODEC_SOURCE, editedToD)).toEqual(
+      treeCodecStateForLeaf(6),
+    );
+  });
 });

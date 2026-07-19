@@ -1,12 +1,16 @@
 # UNCALL
 
-[日本語](README-ja.md)
+[Japanese](README-ja.md)
 
 **One program. Both directions.**
 
 UNCALL is an implementation of the reversible programming language Janus. `call` executes a procedure forward; `uncall` executes that same procedure backward. There is no generated or separately implemented decoder, unsorter, or undo program.
 
 The browser demo directly runs this repository's Pure Janus parser, static checker, resolver, and forward/backward evaluator.
+
+**Live demos:** [Pure Janus](https://uncall.gyu-don.workers.dev/) · [Quantum circuits](https://uncall.gyu-don.workers.dev/quantum)
+
+UNCALL is an OpenAI Build Week project in the **Developer Tools** category. The hosted demos require no account, credentials, or sample-data setup.
 
 ## Three demos
 
@@ -30,12 +34,22 @@ For example, `HELLO` with shift `3` becomes `KHOOR`, and uncalling the same `enc
 
 **Encode a Tree Path and Restore It** maps leaves `A`, `B`, `C`, and `D` in a fixed binary tree to the root-to-leaf routes `0`, `10`, `110`, and `111`. `call encode_path` loops upward through parents while pushing left/right bits onto a path stack. `uncall encode_path` pops those bits to descend through the children and restore both the original leaf and an empty stack. The browser visualizes the tree, current node, path, depth, and the scratch variable `temp` returning to zero on every edge.
 
+## Two quantum demos
+
+The separate [quantum-circuit page](https://uncall.gyu-don.workers.dev/quantum) applies the same `call` / `uncall` model to emitted logical gates.
+
+**Quantum Fourier Transform** runs a three-qubit QFT one gate at a time, visualizes all eight complex amplitudes, and emits the adjoint gates in reverse order during `uncall`. It is a browser state-vector simulation, not quantum-hardware execution.
+
+**Reversible Logical Adder** applies X, CNOT, and logical Toffoli gates to four-bit computational-basis registers. `call add` computes `b = a + b mod 16`; `uncall add` performs the inverse subtraction while preserving `a` and returning the carry ancilla to zero. Toffoli is intentionally treated as a logical primitive, so the demo does not claim a Clifford+T decomposition or hardware resource savings.
+
 ## Try the demo
 
 Requirements:
 
 - Node.js 22 or newer
 - npm
+
+The hosted version supports modern browsers capable of running ES2022 JavaScript. Local development and deployment are supported on platforms where Node.js and the Cloudflare Wrangler CLI run.
 
 ```sh
 npm install
@@ -50,12 +64,38 @@ Wrangler prints the local URL, normally `http://localhost:8787`.
 4. Without adding a decoder, uncall `encode` and verify that `HELLO` returns.
 5. In **Encode a Tree Path and Restore It**, select a leaf, call `encode_path`, and watch the cursor move to the root while its route remains in the path stack.
 6. Uncall `encode_path` and verify that the path clears while the cursor returns to the selected leaf.
+7. Open **Quantum circuits**, call and uncall QFT, and inspect the forward gates and reversed adjoints.
+8. Run the logical adder, optionally edit its valid output, and uncall it to recover the corresponding input.
+
+For the shortest judging path, use the hosted demos: no build is required. Call and uncall **Encode and Decode**, then open **Quantum circuits** and run the QFT round trip. The pages expose the Janus source and state changes; the quantum page also shows the emitted gate stream.
 
 Run the repository checks with:
 
 ```sh
 npm run typecheck
 npm test
+```
+
+## Built with Codex and GPT-5.6
+
+UNCALL was created during the OpenAI Build Week submission period through a series of Codex sessions powered by GPT-5.6. The author set the product direction, constrained the implementation to a Janus86 clean core, reviewed the correctness claims, and made the key product, engineering, and design decisions. Codex turned those decisions into ADRs, implementation changes, tests, documentation, and a deployable Cloudflare Workers application.
+
+Codex accelerated the work in several concrete places:
+
+- scaffolding the TypeScript and Cloudflare Workers project and keeping deployment checks executable;
+- implementing and refining the tokenizer, parser, static checker, resolver, and bidirectional evaluator across related files;
+- separating pure reversible computation from the asynchronous host-effect layer with paired primitives, receipts, validation, and resumable execution records;
+- generating round-trip, exhaustive-input, failure-path, and browser-route tests, then using their failures to drive fixes;
+- iterating on the sort, codec, tree-path, QFT, and logical-adder demos, including edited-output inversion and accessibility improvements.
+
+The author retained the decisions that define the final product: build a real evaluator rather than stop at a mock; keep mathematical inversion separate from compensating external effects; show several visibly different forms of reversal; treat Toffoli only as a logical primitive; and avoid claims that the implementation or tests do not support.
+
+GPT-5.6 was used through Codex for architecture, implementation, debugging, testing, documentation, and review. UNCALL itself is deterministic and does not call a language model at runtime.
+
+Primary Codex `/feedback` Session ID, representing the thread where the Pure Janus core was built:
+
+```text
+019f73c9-9dc8-7663-aeac-4ce20f64e4cf
 ```
 
 ## What is guaranteed
@@ -124,7 +164,7 @@ npm run deploy
 
 Deployment uses Cloudflare Workers. Local or CI deployment needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; keep both in environment variables or repository secrets, never in source. The health endpoint is `/health`.
 
-Design decisions and scope are documented in [ADR002: Janus86 clean core](adr/ADR002-Janus86実装範囲.md) and [ADR003: reversible-by-construction demo](adr/ADR003-刺さるデモシナリオ.md).
+Design decisions and scope are documented in [ADR002: Janus86 clean core](adr/ADR002-janus86-implementation-scope.md) and [ADR003: reversible-by-construction demo](adr/ADR003-demo-scenario.md).
 
 ## License
 

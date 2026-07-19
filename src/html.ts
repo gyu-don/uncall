@@ -192,6 +192,10 @@ export const renderHtml = (): string => `<!doctype html>
       .path-slot strong { color: var(--dim); font: 750 23px/1 ui-monospace, monospace; }
       .path-slot.is-used { border-color: rgba(118,221,255,.58); background: rgba(118,221,255,.05); }
       .path-slot.is-used strong { color: var(--cyan); }
+      .path-bit { width: 100%; min-height: 34px; border: 0; padding: 0; cursor: pointer; background: transparent; color: var(--cyan); font: 750 23px/1 ui-monospace, monospace; }
+      .path-bit:disabled { cursor: default; color: var(--dim); }
+      .path-slot.is-used .path-bit:disabled { color: var(--cyan); }
+      .path-bit:not(:disabled):focus-visible { outline: 1px solid var(--acid); }
       .route-output { min-width: 120px; text-align: right; }
       .route-output span { display: block; margin-bottom: 6px; color: var(--dim); font: var(--font-size-min)/1.3 ui-monospace, monospace; text-transform: uppercase; }
       .route-output strong { color: var(--cyan); font: 800 38px/1 ui-monospace, monospace; letter-spacing: .08em; }
@@ -252,19 +256,19 @@ export const renderHtml = (): string => `<!doctype html>
 
       <div class="demo-switch" role="tablist" aria-label="Pure Janus demos">
         <button class="demo-tab" id="sort-tab" type="button" role="tab" aria-selected="true" aria-controls="sort-demo" data-testid="sort-tab">
-          <span class="demo-tab__title">ソートして元に戻す</span>
+          <span class="demo-tab__title">Sort, then restore</span>
           <span class="demo-tab__meta">Reversible Sort · loop / swap / trace</span>
         </button>
         <button class="demo-tab" id="codec-tab" type="button" role="tab" aria-selected="false" aria-controls="codec-demo" data-testid="codec-tab">
-          <span class="demo-tab__title">EncodeしてDecodeする</span>
+          <span class="demo-tab__title">Encode, then decode</span>
           <span class="demo-tab__meta">Caesar Codec · += becomes -=</span>
         </button>
         <button class="demo-tab" id="tree-tab" type="button" role="tab" aria-selected="false" aria-controls="tree-demo" data-testid="tree-tab">
-          <span class="demo-tab__title">木をPathにして戻す</span>
+          <span class="demo-tab__title">Turn a tree leaf into a path</span>
           <span class="demo-tab__meta">Tree Path Codec · loop / stack / tree</span>
         </button>
       </div>
-      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>同じsortを両方向に実行します。</strong> <code>length</code>回の入力を可逆な二重ループで並べ、<code>uncall</code>はtraceから元の制御フローを復元します。</p>
+      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>Run the same sort in both directions.</strong> A reversible nested loop orders <code>length</code> inputs; <code>uncall</code> reconstructs the original control flow from the trace.</p>
 
       <section class="tab-panel" id="sort-demo" role="tabpanel" aria-labelledby="sort-tab">
         <section class="lab">
@@ -443,9 +447,9 @@ export const renderHtml = (): string => `<!doctype html>
                 <div>
                   <div class="array-label"><h3>path[3]</h3><span class="tag">bottom → top · pop right to left</span></div>
                   <ol class="path-stack">
-                    <li class="path-slot" data-tree-path="0"><code>path[0]</code><strong>·</strong></li>
-                    <li class="path-slot" data-tree-path="1"><code>path[1]</code><strong>·</strong></li>
-                    <li class="path-slot" data-tree-path="2"><code>path[2]</code><strong>·</strong></li>
+                    <li class="path-slot" data-tree-path="0"><code>path[0]</code><button class="path-bit" type="button" data-tree-path-bit="0" disabled aria-label="Path bit 0">·</button></li>
+                    <li class="path-slot" data-tree-path="1"><code>path[1]</code><button class="path-bit" type="button" data-tree-path-bit="1" disabled aria-label="Path bit 1">·</button></li>
+                    <li class="path-slot" data-tree-path="2"><code>path[2]</code><button class="path-bit" type="button" data-tree-path-bit="2" disabled aria-label="Path bit 2">·</button></li>
                   </ol>
                 </div>
                 <div class="route-output"><span>root → leaf</span><strong id="tree-route">—</strong></div>

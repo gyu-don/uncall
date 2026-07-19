@@ -28,6 +28,18 @@ export class QftStateVector {
     this.#real[input] = 1;
   }
 
+  setQftOutput(input: number): void {
+    if (!Number.isInteger(input) || input < 0 || input > 7) {
+      throw new RangeError("QFT output label must be an integer from 0 to 7.");
+    }
+    const scale = 1 / Math.sqrt(8);
+    for (let basis = 0; basis < 8; basis += 1) {
+      const angle = (2 * Math.PI * input * basis) / 8;
+      this.#real[basis] = Math.cos(angle) * scale;
+      this.#imaginary[basis] = Math.sin(angle) * scale;
+    }
+  }
+
   apply(gate: QuantumGate): void {
     switch (gate.kind) {
       case "h":

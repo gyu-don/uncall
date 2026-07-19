@@ -81,7 +81,7 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       button, input, select, textarea { font: inherit; }
       a { color: var(--cyan); }
       [hidden] { display: none !important; }
-      .shell { position: relative; width: min(1320px,calc(100% - 44px)); margin: 0 auto; padding: 28px 0 48px; }
+      .shell { position: relative; width: min(1440px,calc(100% - 44px)); margin: 0 auto; padding: 28px 0 48px; }
       .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 65px; }
       .brand { color: var(--ink); font: 800 14px/1 ui-monospace,monospace; letter-spacing: .18em; text-decoration: none; }
       .back-link { color: var(--muted); font: var(--font-size-min)/1.3 ui-monospace,monospace; letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
@@ -106,9 +106,10 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       .panel-head h2 { margin: 0; font-size: clamp(31px,4vw,55px); line-height: .98; letter-spacing: -.045em; }
       .panel-head h2 em { color: var(--cyan); font-style: normal; }
       .panel-head p:last-child { margin: 0; color: var(--muted); font-size: var(--font-size-min); line-height: 1.7; }
-      .workbench { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(330px,.5fr); }
+      .workbench { display: grid; grid-template-columns: minmax(420px,.82fr) minmax(0,1.18fr); }
       .main-pane, .side-pane { min-width: 0; padding: 24px; }
-      .side-pane { border-left: 1px solid var(--line); }
+      .main-pane { grid-column: 2; grid-row: 1; }
+      .side-pane { grid-column: 1; grid-row: 1; border-right: 1px solid var(--line); }
       .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
       .section-head h3 { margin: 0; font-size: var(--font-size-min); }
       .tag { color: var(--dim); font: var(--font-size-min)/1.4 ui-monospace,monospace; letter-spacing: .07em; text-transform: uppercase; }
@@ -116,6 +117,7 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       label { display: grid; gap: 7px; color: var(--dim); font: var(--font-size-min)/1.3 ui-monospace,monospace; letter-spacing: .07em; text-transform: uppercase; }
       select, input[type="number"] { min-width: 170px; min-height: 43px; border: 1px solid var(--line); border-radius: 0; padding: 0 12px; background: var(--panel-2); color: var(--ink); }
       select:focus, input:focus { outline: 1px solid var(--cyan); }
+      .output-field select:not(:disabled), .register-output:not(:disabled) { border-color: var(--cyan); color: var(--cyan); }
       .basis-readout { margin-left: auto; color: var(--cyan); font: 800 31px/1 ui-monospace,monospace; }
       .circuit-frame { display: grid; grid-template-columns: auto minmax(0,1fr); border: 1px solid var(--line); background: var(--panel-2); }
       .wire-labels { z-index: 1; display: grid; align-content: start; min-width: 84px; border-right: 1px solid var(--line); padding-top: 12px; background: #0c0f11; color: var(--muted); font: var(--font-size-min)/44px ui-monospace,monospace; text-align: center; }
@@ -156,6 +158,7 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       .register span, .register strong { display: block; }
       .register span { margin-bottom: 7px; color: var(--dim); font: var(--font-size-min)/1.3 ui-monospace,monospace; text-transform: uppercase; }
       .register strong { color: var(--cyan); font: 750 15px/1.25 ui-monospace,monospace; }
+      .register-output { display: block; width: 100%; min-width: 0 !important; min-height: 38px !important; color: var(--cyan); font: 750 15px/1.25 ui-monospace,monospace; }
       .register.is-clean { border-color: rgba(142,229,161,.42); }
       .register.is-clean strong { color: var(--green); }
       .editor { border: 1px solid var(--line); background: #080a0b; }
@@ -174,7 +177,9 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       @media (max-width: 920px) {
         .shell { width: min(100% - 24px,760px); }
         .hero, .panel-head, .workbench { grid-template-columns: 1fr; }
-        .side-pane { border-top: 1px solid var(--line); border-left: 0; }
+        .main-pane, .side-pane { grid-column: 1; }
+        .side-pane { grid-row: 1; border-right: 0; border-bottom: 1px solid var(--line); }
+        .main-pane { grid-row: 2; }
         .tabs { display: flex; width: 100%; }
         .tab { min-width: 0; flex: 1; }
       }
@@ -226,6 +231,7 @@ export const renderQuantumHtml = (): string => `<!doctype html>
           <section class="main-pane" aria-labelledby="qft-circuit-title">
             <div class="input-row">
               <label>Computational basis input<select id="qft-input">${qftOptions}</select></label>
+              <label class="output-field">Phase-encoded output<select id="qft-output" disabled>${qftOptions}</select></label>
               <strong class="basis-readout" id="qft-basis">|101⟩</strong>
             </div>
             <div class="section-head"><h3 id="qft-circuit-title">Emitted gate circuit</h3><span class="tag" id="qft-step">ready · 0 / 7</span></div>
@@ -268,7 +274,7 @@ export const renderQuantumHtml = (): string => `<!doctype html>
             </div>
             <div class="registers" aria-label="Adder register state">
               <div class="register"><span>a · unchanged</span><strong id="adder-register-a">0101 · 5</strong></div>
-              <div class="register"><span>b · target</span><strong id="adder-register-b">1011 · 11</strong></div>
+              <div class="register"><span>b · output · editable after call</span><input class="register-output" id="adder-output-b" type="number" min="0" max="15" step="1" value="11" disabled aria-label="Adder output register b"></div>
               <div class="register is-clean" id="adder-ancilla-box"><span>c0 · carry ancilla</span><strong id="adder-ancilla">0 · clean</strong></div>
             </div>
             <div class="section-head"><h3 id="adder-circuit-title">Emitted logical gate circuit</h3><span class="tag" id="adder-step">ready · 0 / 24</span></div>

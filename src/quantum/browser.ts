@@ -225,6 +225,7 @@ const updateTabAvailability = (): void => {
 };
 
 const qftInput = element<HTMLSelectElement>("qft-input");
+const qftOutput = element<HTMLSelectElement>("qft-output");
 const qftBasis = element<HTMLElement>("qft-basis");
 const qftCircuit = element<SVGSVGElement>("qft-circuit");
 const qftStep = element<HTMLElement>("qft-step");
@@ -244,8 +245,11 @@ const renderQft = (): void => {
     ? snapshot.backwardSteps
     : snapshot.forwardSteps;
   qftBasis.textContent = `|${binary(snapshot.input, 3)}⟩`;
-  qftInput.disabled = snapshot.phase !== "ready";
-  qftCall.disabled = snapshot.phase !== "ready";
+  qftInput.value = String(snapshot.input);
+  qftOutput.value = String(snapshot.outputInput);
+  qftInput.disabled = snapshot.phase !== "ready" && snapshot.phase !== "restored";
+  qftOutput.disabled = snapshot.phase !== "called";
+  qftCall.disabled = snapshot.phase !== "ready" && snapshot.phase !== "restored";
   qftUncall.disabled = snapshot.phase !== "called";
   qftReset.disabled = isBusy(snapshot.phase);
   qftStep.textContent = `${snapshot.phase} · ${displayedSteps.length} / 7`;
@@ -297,7 +301,7 @@ const renderQft = (): void => {
       break;
     case "called":
       qftStatus.classList.add("is-ok");
-      qftStatus.innerHTML = "<strong>Forward verified.</strong> All eight probabilities are 1/8; x is visible in the phasor directions.";
+      qftStatus.innerHTML = "<strong>Forward verified.</strong> All eight probabilities are 1/8. Change the cyan phase-encoded output before Uncall, or keep it for an exact round trip.";
       break;
     case "running-backward":
       qftStatus.innerHTML = `<strong>Emitting QFT†.</strong> Adjoint gate ${snapshot.currentStep?.step ?? 0} of 7.`;
@@ -323,10 +327,21 @@ const resetQft = (): void => {
 };
 
 qftInput.addEventListener("change", resetQft);
+qftOutput.addEventListener("change", () => {
+  try {
+    qftRuntime.editCalledOutput(Number(qftOutput.value));
+    qftStatus.className = "status";
+    qftStatus.innerHTML = `<strong>Output edited.</strong> Uncall will decode this phase pattern as |${binary(Number(qftOutput.value), 3)}⟩.`;
+  } catch (error) {
+    qftStatus.className = "status is-error";
+    qftStatus.textContent = error instanceof Error ? error.message : String(error);
+  }
+});
 qftReset.addEventListener("click", resetQft);
 qftCall.addEventListener("click", async () => {
   try {
     await qftRuntime.call();
+    renderQft();
   } catch {
     renderQft();
   }
@@ -334,6 +349,7 @@ qftCall.addEventListener("click", async () => {
 qftUncall.addEventListener("click", async () => {
   try {
     await qftRuntime.uncall();
+    renderQft();
   } catch {
     renderQft();
   }
@@ -343,7 +359,7 @@ const adderA = element<HTMLInputElement>("adder-a");
 const adderB = element<HTMLInputElement>("adder-b");
 const adderEquation = element<HTMLElement>("adder-equation");
 const adderRegisterA = element<HTMLElement>("adder-register-a");
-const adderRegisterB = element<HTMLElement>("adder-register-b");
+const adderOutputB = element<HTMLInputElement>("adder-output-b");
 const adderAncilla = element<HTMLElement>("adder-ancilla");
 const adderAncillaBox = element<HTMLElement>("adder-ancilla-box");
 const adderCircuit = element<SVGSVGElement>("adder-circuit");
@@ -372,14 +388,17 @@ const renderAdder = (): void => {
     ? snapshot.backwardSteps
     : snapshot.forwardSteps;
   const { basis } = snapshot;
-  adderA.disabled = snapshot.phase !== "ready";
-  adderB.disabled = snapshot.phase !== "ready";
-  adderCall.disabled = snapshot.phase !== "ready";
+  adderA.value = String(snapshot.inputA);
+  adderB.value = String(snapshot.inputB);
+  adderA.disabled = snapshot.phase !== "ready" && snapshot.phase !== "restored";
+  adderB.disabled = snapshot.phase !== "ready" && snapshot.phase !== "restored";
+  adderOutputB.value = String(basis.b);
+  adderOutputB.disabled = snapshot.phase !== "called";
+  adderCall.disabled = snapshot.phase !== "ready" && snapshot.phase !== "restored";
   adderUncall.disabled = snapshot.phase !== "called";
   adderReset.disabled = isBusy(snapshot.phase);
   adderEquation.textContent = `${snapshot.inputA} + ${snapshot.inputB} mod 16`;
   adderRegisterA.textContent = `${binary(basis.a, 4)} · ${basis.a}`;
-  adderRegisterB.textContent = `${binary(basis.b, 4)} · ${basis.b}`;
   adderAncilla.textContent = `${basis.ancilla} · ${basis.ancilla === 0 ? "clean" : "carry"}`;
   adderAncillaBox.classList.toggle("is-clean", basis.ancilla === 0);
   adderStep.textContent = `${snapshot.phase} · ${displayedSteps.length} / 24`;
@@ -405,7 +424,7 @@ const renderAdder = (): void => {
       break;
     case "called":
       adderStatus.classList.add("is-ok");
-      adderStatus.innerHTML = `<strong>Forward verified.</strong> a stayed ${basis.a}; b is ${basis.b}; carry ancilla returned to |0⟩.`;
+      adderStatus.innerHTML = `<strong>Forward verified.</strong> a stayed ${basis.a}; b is ${basis.b}; carry ancilla returned to |0⟩. Edit the cyan b output before Uncall if desired.`;
       break;
     case "running-backward":
       adderStatus.innerHTML = `<strong>Emitting subtraction.</strong> Reverse gate ${snapshot.currentStep?.step ?? 0} of 24.`;
@@ -439,10 +458,24 @@ const resetAdder = (): void => {
 
 adderA.addEventListener("change", resetAdder);
 adderB.addEventListener("change", resetAdder);
+adderOutputB.addEventListener("change", () => {
+  try {
+    const value = readAdderInput(adderOutputB, "Output b");
+    adderRuntime.editCalledOutputB(value);
+    const snapshot = adderRuntime.getSnapshot();
+    const restored = (value - snapshot.inputA + 16) % 16;
+    adderStatus.className = "status";
+    adderStatus.innerHTML = `<strong>Output edited.</strong> Uncall will subtract a = ${snapshot.inputA} and restore b = ${restored}.`;
+  } catch (error) {
+    adderStatus.className = "status is-error";
+    adderStatus.textContent = error instanceof Error ? error.message : String(error);
+  }
+});
 adderReset.addEventListener("click", resetAdder);
 adderCall.addEventListener("click", async () => {
   try {
     await adderRuntime.call();
+    renderAdder();
   } catch {
     renderAdder();
   }
@@ -450,6 +483,7 @@ adderCall.addEventListener("click", async () => {
 adderUncall.addEventListener("click", async () => {
   try {
     await adderRuntime.uncall();
+    renderAdder();
   } catch {
     renderAdder();
   }
