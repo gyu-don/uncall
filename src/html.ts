@@ -180,7 +180,7 @@ export const renderHtml = (): string => `<!doctype html>
       .leaf-choice span { display: block; margin-top: 3px; color: var(--dim); font-size: var(--font-size-min); }
       .leaf-choice.is-selected { border-color: var(--acid); color: var(--acid); }
       .leaf-choice:disabled { cursor: not-allowed; opacity: .45; }
-      .tree-state { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 14px; }
+      .tree-state { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; margin-top: 14px; }
       .tree-register { border: 1px solid var(--line); padding: 10px; background: #0b0d0c; }
       .tree-register span { display: block; margin-bottom: 7px; color: var(--dim); font: var(--font-size-min)/1.3 ui-monospace, monospace; text-transform: uppercase; }
       .tree-register strong { color: var(--ink); font: 750 16px/1.2 ui-monospace, monospace; }
@@ -257,41 +257,41 @@ export const renderHtml = (): string => `<!doctype html>
       <div class="demo-switch" role="tablist" aria-label="Pure Janus demos">
         <button class="demo-tab" id="sort-tab" type="button" role="tab" aria-selected="true" aria-controls="sort-demo" data-testid="sort-tab">
           <span class="demo-tab__title">Sort, then restore</span>
-          <span class="demo-tab__meta">Reversible Sort · loop / swap / trace</span>
+          <span class="demo-tab__meta">Watch the trace remember every swap</span>
         </button>
         <button class="demo-tab" id="codec-tab" type="button" role="tab" aria-selected="false" aria-controls="codec-demo" data-testid="codec-tab">
-          <span class="demo-tab__title">Encode, then decode</span>
-          <span class="demo-tab__meta">Caesar Codec · += becomes -=</span>
+          <span class="demo-tab__title">Encode with one procedure</span>
+          <span class="demo-tab__meta">Call adds · uncall subtracts</span>
         </button>
         <button class="demo-tab" id="tree-tab" type="button" role="tab" aria-selected="false" aria-controls="tree-demo" data-testid="tree-tab">
-          <span class="demo-tab__title">Turn a tree leaf into a path</span>
-          <span class="demo-tab__meta">Tree Path Codec · loop / stack / tree</span>
+          <span class="demo-tab__title">Store a tree leaf as a path</span>
+          <span class="demo-tab__meta">Climb to encode · descend to decode</span>
         </button>
       </div>
-      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>Run the same sort in both directions.</strong> A reversible nested loop orders <code>length</code> inputs; <code>uncall</code> reconstructs the original control flow from the trace.</p>
+      <p class="demo-explainer" id="demo-explainer" aria-live="polite"><strong>Watch information move instead of disappear.</strong> The array becomes sorted while six trace bits remember the swaps. <code>uncall</code> reads those bits backward to restore the input.</p>
 
       <section class="tab-panel" id="sort-demo" role="tabpanel" aria-labelledby="sort-tab">
         <section class="lab">
           <header class="lab-intro">
             <div>
-              <p class="kicker">Pure Janus · reversible sort</p>
+              <p class="kicker">Reversible sort</p>
               <h2>Sort forward.<br><em>Restore backward.</em></h2>
             </div>
-            <p>A reversible nested loop sorts <code>length</code> values. Janus keeps each branch decision in trace, then runs those loops and swaps backward.</p>
+            <p>An ordinary sort forgets where values came from. This one leaves six branch bits behind—just enough information to retrace every swap.</p>
           </header>
           <div class="lab-grid">
             <section class="lab-pane" aria-labelledby="sort-source-title">
-              <div class="pane-head"><h3 id="sort-source-title">sort.janus · editable</h3><span class="tag">parser → checker → evaluator</span></div>
+              <div class="pane-head"><h3 id="sort-source-title">sort.janus · editable</h3><span class="tag">change it and run again</span></div>
               <div class="editor">
                 <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">sort.janus</span></div>
                 <textarea class="source-editor" id="pure-source" aria-label="Pure Janus sort source" spellcheck="false">${escapeHtml(PURE_SORT_SOURCE)}</textarea>
               </div>
             </section>
             <section class="lab-pane" aria-labelledby="sort-state-title">
-              <div class="pane-head"><h3 id="sort-state-title">Reversible machine state</h3><span class="tag" id="pure-phase">initial</span></div>
+              <div class="pane-head"><h3 id="sort-state-title">Array and trace</h3><span class="tag" id="pure-phase">input</span></div>
               <div class="proof">
                 <div class="equation">uncall(sort, <span>call(sort, state)</span>) = state</div>
-                <p>The real Pure Janus evaluator reverses updates, swaps, statement order, and control flow.</p>
+                <p>Call sorts the array. Uncall follows the recorded decisions in reverse and reconstructs the input.</p>
               </div>
               <div class="array-label"><h3>values[4]</h3><span class="tag" id="pure-values-hint">edit initial state</span></div>
               <div class="value-array">
@@ -323,9 +323,9 @@ export const renderHtml = (): string => `<!doctype html>
             </section>
           </div>
           <div class="footnote">
-            <div><span>Call</span><p>Nested reversible loops sort the logical length.</p></div>
-            <div><span>Remember</span><p>Trace records only which branches swapped.</p></div>
-            <div><span>Uncall</span><p>Exit assertions restore the path, input order, and zero trace.</p></div>
+            <div><span>Sort</span><p>The array changes into ascending order.</p></div>
+            <div><span>Remember</span><p>Each trace bit says whether one comparison swapped.</p></div>
+            <div><span>Restore</span><p>Reading those bits backward recreates the original order.</p></div>
           </div>
         </section>
       </section>
@@ -334,25 +334,25 @@ export const renderHtml = (): string => `<!doctype html>
         <section class="lab">
           <header class="lab-intro">
             <div>
-              <p class="kicker">Pure Janus · tiny codec</p>
+              <p class="kicker">One-procedure codec</p>
               <h2>Write encode.<br><em>Uncall is decode.</em></h2>
             </div>
-            <p>The program only adds a shift to five character codes. Janus derives the inverse execution: reverse the statements and turn every <code>+=</code> into <code>-=</code>.</p>
+            <p>Five additions turn plain text into coded text. Run the same procedure backward and those additions become subtractions.</p>
           </header>
           <div class="lab-grid codec-grid">
             <section class="lab-pane" aria-labelledby="codec-source-title">
-              <div class="pane-head"><h3 id="codec-source-title">encode.janus · no decoder</h3><span class="tag">8 lines</span></div>
+              <div class="pane-head"><h3 id="codec-source-title">encode.janus · editable</h3><span class="tag">only encode()</span></div>
               <div class="editor">
                 <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">encode.janus</span></div>
                 <textarea class="source-editor codec-source" id="codec-source" aria-label="Pure Janus encoder source" spellcheck="false">${escapeHtml(PURE_CODEC_SOURCE)}</textarea>
               </div>
-              <p class="codec-inverse"><strong>Derived backward:</strong><br>message[4] -= shift<br>…<br>message[0] -= shift</p>
+              <p class="codec-inverse"><strong>What uncall does:</strong><br>message[4] -= shift<br>…<br>message[0] -= shift</p>
             </section>
             <section class="lab-pane" aria-labelledby="codec-state-title">
-              <div class="pane-head"><h3 id="codec-state-title">Message state</h3><span class="tag" id="codec-phase">plain</span></div>
+              <div class="pane-head"><h3 id="codec-state-title">Message</h3><span class="tag" id="codec-phase">plain text</span></div>
               <div class="proof">
                 <div class="equation">uncall(encode, <span>call(encode, message)</span>) = message</div>
-                <p>There is no decoder procedure. The real evaluator executes encode backward.</p>
+                <p>The code contains only <code>encode()</code>. Reverse execution supplies the decoding behavior.</p>
               </div>
               <div class="codec-inputs">
                 <label class="field"><span id="codec-message-label">5-character message</span><input class="text-input" id="codec-input" value="HELLO" maxlength="5" aria-label="Message"></label>
@@ -386,25 +386,25 @@ export const renderHtml = (): string => `<!doctype html>
         <section class="lab">
           <header class="lab-intro">
             <div>
-              <p class="kicker">Pure Janus · tree path codec</p>
+              <p class="kicker">Tree path codec</p>
               <h2>Climb to encode.<br><em>Descend to restore.</em></h2>
             </div>
-            <p>A leaf becomes a route at the root. The same loop runs backward, pops each path bit, and walks the fixed tree back to the exact symbol.</p>
+            <p>Climbing from a leaf stores each left or right turn. Reverse the loop and that path becomes directions back down the tree.</p>
           </header>
           <div class="lab-grid tree-grid">
             <section class="lab-pane" aria-labelledby="tree-source-title">
-              <div class="pane-head"><h3 id="tree-source-title">encode_path.janus · editable</h3><span class="tag">real loop · no decoder</span></div>
+              <div class="pane-head"><h3 id="tree-source-title">encode_path.janus · editable</h3><span class="tag">one loop · both directions</span></div>
               <div class="editor">
                 <div class="editor__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="editor__file">encode_path.janus</span></div>
                 <textarea class="source-editor tree-source" id="tree-source" aria-label="Pure Janus tree path encoder source" spellcheck="false">${escapeHtml(PURE_TREE_CODEC_SOURCE)}</textarea>
               </div>
-              <p class="codec-inverse"><strong>Loop invariant:</strong><br><code>temp</code> returns to zero after every edge. The child identity moves into <code>path</code>, never disappears.</p>
+              <p class="codec-inverse"><strong>Where the leaf goes:</strong><br>each upward step moves one left/right decision into <code>path</code>. Nothing has to be guessed on the way back.</p>
             </section>
             <section class="lab-pane" aria-labelledby="tree-state-title">
-              <div class="pane-head"><h3 id="tree-state-title">Fixed tree · reversible cursor</h3><span class="tag" id="tree-phase">initial</span></div>
+              <div class="pane-head"><h3 id="tree-state-title">Leaf and path</h3><span class="tag" id="tree-phase">leaf selected</span></div>
               <div class="proof">
                 <div class="equation">uncall(encode_path, <span>call(encode_path, <b id="tree-proof-symbol">C</b>)</span>) = <b id="tree-proof-result">C</b></div>
-                <p>The leaf identity moves into a LIFO path. Uncall consumes that path from root to leaf and clears every bit.</p>
+                <p>At the root, the path holds the leaf's identity. Uncall consumes that path to choose each child.</p>
               </div>
 
               <div class="tree-visual">
@@ -441,11 +441,10 @@ export const renderHtml = (): string => `<!doctype html>
               <div class="tree-state" aria-label="Tree codec registers">
                 <div class="tree-register"><span>node</span><strong id="tree-node-value">5 · C</strong></div>
                 <div class="tree-register"><span>depth</span><strong id="tree-depth-value">0</strong></div>
-                <div class="tree-register is-clean" id="tree-temp-register"><span>temp · scratch</span><strong id="tree-temp-value">0 · clean</strong></div>
               </div>
               <div class="path-display">
                 <div>
-                  <div class="array-label"><h3>path[3]</h3><span class="tag">bottom → top · pop right to left</span></div>
+                  <div class="array-label"><h3>path[3]</h3><span class="tag">first step → last step</span></div>
                   <ol class="path-stack">
                     <li class="path-slot" data-tree-path="0"><code>path[0]</code><button class="path-bit" type="button" data-tree-path-bit="0" disabled aria-label="Path bit 0">·</button></li>
                     <li class="path-slot" data-tree-path="1"><code>path[1]</code><button class="path-bit" type="button" data-tree-path-bit="1" disabled aria-label="Path bit 1">·</button></li>
@@ -468,14 +467,14 @@ export const renderHtml = (): string => `<!doctype html>
             </section>
           </div>
           <div class="footnote">
-            <div><span>Call · push</span><p>Each loop reads left/right, pushes one bit, and moves the cursor to its parent.</p></div>
-            <div><span>Keep clean</span><p>The fixed tree reconstructs the old child, allowing scratch <code>temp</code> to return to zero.</p></div>
-            <div><span>Uncall · pop</span><p>Bits are consumed from the stack to choose children until the exact leaf returns.</p></div>
+            <div><span>Choose</span><p>Start from any of the four leaves.</p></div>
+            <div><span>Climb</span><p>Each step pushes one left/right decision into the path.</p></div>
+            <div><span>Descend</span><p>Uncall pops those decisions and returns to a leaf.</p></div>
           </div>
         </section>
       </section>
 
-      <footer><span>Pure Janus parser · checker · evaluator</span><span>No generated inverse program. The same AST runs backward.</span></footer>
+      <footer><span>Edit the input. Edit the program. Run both ways.</span><span>One procedure · two directions</span></footer>
     </main>
     <script src="/app.js" defer></script>
   </body>

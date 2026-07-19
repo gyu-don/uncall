@@ -1,5 +1,5 @@
-import { ADDER_SOURCE } from "./adder-source";
-import { QFT_SOURCE } from "./qft-source";
+import { ADDER_HOST_SOURCE } from "./adder-source";
+import { QFT_HOST_SOURCE } from "./qft-source";
 
 const escapeHtml = (value: string): string =>
   value
@@ -170,9 +170,6 @@ export const renderQuantumHtml = (): string => `<!doctype html>
       .stream h4 { margin: 0; border-bottom: 1px solid var(--line); padding: 9px; color: var(--muted); font: var(--font-size-min)/1.3 ui-monospace,monospace; }
       .stream ol { max-height: 190px; overflow: auto; margin: 0; padding: 9px 9px 9px 31px; color: var(--dim); font: var(--font-size-min)/1.6 ui-monospace,monospace; }
       .stream li.is-current { color: var(--acid); }
-      .scope { margin: 16px 0 0; border: 1px solid rgba(189,165,255,.35); padding: 14px; color: var(--muted); font-size: var(--font-size-min); line-height: 1.65; }
-      .scope strong { color: var(--violet); }
-      .citation { margin: 13px 0 0; color: var(--muted); font-size: var(--font-size-min); line-height: 1.6; }
       footer { display: flex; justify-content: space-between; gap: 16px; padding: 20px 2px 0; color: var(--dim); font: var(--font-size-min)/1.5 ui-monospace,monospace; }
       @media (max-width: 920px) {
         .shell { width: min(100% - 24px,760px); }
@@ -207,10 +204,10 @@ export const renderQuantumHtml = (): string => `<!doctype html>
 
       <header class="hero">
         <div>
-          <p class="kicker">Janus host primitives · quantum simulation</p>
-          <h1>Quantum circuits have a direction. <em>Janus lets you run both.</em></h1>
+          <p class="kicker">Reversible circuits with Janus</p>
+          <h1>Run a circuit forward. <em>Then watch it unwind.</em></h1>
         </div>
-        <p class="lede">Every visible gate is emitted by a host primitive. <code>call</code> executes the circuit; <code>uncall</code> traverses the same Janus procedure in reverse and asks each primitive for its adjoint.</p>
+        <p class="lede"><code>call</code> emits a circuit gate by gate. <code>uncall</code> walks the same Janus procedure backward, reversing both the gate order and each operation.</p>
       </header>
 
       <div class="tabs" role="tablist" aria-label="Quantum circuit demos">
@@ -224,17 +221,17 @@ export const renderQuantumHtml = (): string => `<!doctype html>
 
       <section class="panel" id="qft-panel" role="tabpanel" aria-labelledby="qft-tab">
         <header class="panel-head">
-          <div><p class="kicker">Question 01 · where did the number go?</p><h2>Magnitude becomes uniform.<br><em>Input becomes phase.</em></h2></div>
-          <p>A fixed 3-qubit state-vector simulation applies QFT to one computational basis state. All eight probabilities become 1/8; the phasors retain the relative phase that encodes x.</p>
+          <div><p class="kicker">Quantum Fourier Transform</p><h2>A number becomes phase.<br><em>Reverse it to get the number back.</em></h2></div>
+          <p>QFT spreads one basis value across eight equal magnitudes. The arrows reveal where the value went: it is now stored in their relative phases.</p>
         </header>
         <div class="workbench">
           <section class="main-pane" aria-labelledby="qft-circuit-title">
             <div class="input-row">
               <label>Computational basis input<select id="qft-input">${qftOptions}</select></label>
-              <label class="output-field">Phase-encoded output<select id="qft-output" disabled>${qftOptions}</select></label>
+              <label class="output-field">Phase pattern · editable after call<select id="qft-output" disabled>${qftOptions}</select></label>
               <strong class="basis-readout" id="qft-basis">|101⟩</strong>
             </div>
-            <div class="section-head"><h3 id="qft-circuit-title">Emitted gate circuit</h3><span class="tag" id="qft-step">ready · 0 / 7</span></div>
+            <div class="section-head"><h3 id="qft-circuit-title">Gate sequence</h3><span class="tag" id="qft-step">ready · 0 / 7</span></div>
             <div class="circuit-frame">
               <div class="wire-labels" style="grid-template-rows:repeat(3,44px)"><span>q0 · LSB</span><span>q1</span><span>q2 · MSB</span></div>
               <div class="circuit-scroll"><svg class="circuit" id="qft-circuit" height="156" role="img" aria-label="QFT gate circuit"></svg></div>
@@ -245,25 +242,24 @@ export const renderQuantumHtml = (): string => `<!doctype html>
               <button class="button button--uncall" id="qft-uncall" type="button" disabled>← UNCALL QFT</button>
               <button class="button" id="qft-reset" type="button">RESET</button>
             </div>
-            <p class="status" id="qft-status" aria-live="polite"><strong>Ready.</strong> Call QFT to move the basis value into relative phase.</p>
+            <p class="status" id="qft-status" aria-live="polite"><strong>Ready.</strong> Call QFT and watch the value move into relative phase.</p>
             <ol class="amplitudes" aria-label="Eight complex amplitudes">${amplitudeCards}</ol>
             <div class="stream-grid">
-              <section class="stream"><h4>Forward · QFT</h4><ol id="qft-forward-stream"></ol></section>
-              <section class="stream"><h4>Backward · QFT†</h4><ol id="qft-backward-stream"></ol></section>
+              <section class="stream"><h4>Call · QFT</h4><ol id="qft-forward-stream"></ol></section>
+              <section class="stream"><h4>Uncall · inverse QFT</h4><ol id="qft-backward-stream"></ol></section>
             </div>
           </section>
           <aside class="side-pane" aria-labelledby="qft-source-title">
-            <div class="section-head"><h3 id="qft-source-title">qft.janus</h3><span class="tag">width-generic loop · specialized to 3</span></div>
-            <div class="editor"><div class="editor-bar"><code>length</code> drives target/control loops; the adapter lowers indices to primitive names</div><textarea class="source" readonly aria-label="QFT Janus source">${escapeHtml(QFT_SOURCE)}</textarea></div>
-            <div class="scope"><strong>Simulation scope</strong><br>3-qubit state vector in this browser. This is not execution on quantum hardware.</div>
+            <div class="section-head"><h3 id="qft-source-title">qft.janus · executed</h3><span class="tag">one entry point · seven gates</span></div>
+            <div class="editor"><div class="editor-bar">Uncall traverses these procedure calls in reverse</div><textarea class="source" readonly aria-label="QFT Janus source">${escapeHtml(QFT_HOST_SOURCE)}</textarea></div>
           </aside>
         </div>
       </section>
 
       <section class="panel" id="adder-panel" role="tabpanel" aria-labelledby="adder-tab" hidden>
         <header class="panel-head">
-          <div><p class="kicker">Question 02 · can one procedure add and subtract?</p><h2>Add forward.<br><em>Subtract backward.</em></h2></div>
-          <p>A Cuccaro-style majority/unmajority carry chain updates computational-basis bits. Janus emits the logical gate sequence forward, then derives subtraction from the same nested procedure.</p>
+          <div><p class="kicker">Reversible adder</p><h2>Add forward.<br><em>Subtract backward.</em></h2></div>
+          <p>The gate sequence adds register <code>a</code> into <code>b</code>. Uncall reverses that exact sequence, turning the same procedure into subtraction.</p>
         </header>
         <div class="workbench">
           <section class="main-pane" aria-labelledby="adder-circuit-title">
@@ -274,10 +270,10 @@ export const renderQuantumHtml = (): string => `<!doctype html>
             </div>
             <div class="registers" aria-label="Adder register state">
               <div class="register"><span>a · unchanged</span><strong id="adder-register-a">0101 · 5</strong></div>
-              <div class="register"><span>b · output · editable after call</span><input class="register-output" id="adder-output-b" type="number" min="0" max="15" step="1" value="11" disabled aria-label="Adder output register b"></div>
-              <div class="register is-clean" id="adder-ancilla-box"><span>c0 · carry ancilla</span><strong id="adder-ancilla">0 · clean</strong></div>
+              <div class="register"><span>b · sum · editable after call</span><input class="register-output" id="adder-output-b" type="number" min="0" max="15" step="1" value="11" disabled aria-label="Adder output register b"></div>
+              <div class="register is-clean" id="adder-ancilla-box"><span>carry · starts and ends at 0</span><strong id="adder-ancilla">0</strong></div>
             </div>
-            <div class="section-head"><h3 id="adder-circuit-title">Emitted logical gate circuit</h3><span class="tag" id="adder-step">ready · 0 / 24</span></div>
+            <div class="section-head"><h3 id="adder-circuit-title">Gate sequence</h3><span class="tag" id="adder-step">ready · 0 / 24</span></div>
             <div class="circuit-frame">
               <div class="wire-labels" style="grid-template-rows:repeat(9,44px)"><span>a0</span><span>a1</span><span>a2</span><span>a3</span><span>b0</span><span>b1</span><span>b2</span><span>b3</span><span>c0 · |0⟩</span></div>
               <div class="circuit-scroll"><svg class="circuit" id="adder-circuit" height="420" role="img" aria-label="Logical Toffoli adder gate circuit"></svg></div>
@@ -290,20 +286,18 @@ export const renderQuantumHtml = (): string => `<!doctype html>
             </div>
             <p class="status" id="adder-status" aria-live="polite"><strong>Ready.</strong> Call add to compute b = a + b mod 16.</p>
             <div class="stream-grid">
-              <section class="stream"><h4>Forward · addition</h4><ol id="adder-forward-stream"></ol></section>
-              <section class="stream"><h4>Backward · subtraction</h4><ol id="adder-backward-stream"></ol></section>
+              <section class="stream"><h4>Call · addition</h4><ol id="adder-forward-stream"></ol></section>
+              <section class="stream"><h4>Uncall · subtraction</h4><ol id="adder-backward-stream"></ol></section>
             </div>
           </section>
           <aside class="side-pane" aria-labelledby="adder-source-title">
-            <div class="section-head"><h3 id="adder-source-title">add.janus</h3><span class="tag">width-generic loop · specialized to 4</span></div>
-            <div class="editor"><div class="editor-bar"><code>length</code> drives one MAJ and one reverse UMA traversal</div><textarea class="source adder-source" readonly aria-label="Adder Janus source">${escapeHtml(ADDER_SOURCE)}</textarea></div>
-            <div class="scope"><strong>Logical Toffoli primitives; no Clifford+T decomposition.</strong><br>Computational-basis-only logical gate simulation. The demo does not reproduce or claim T-count or T-depth savings.</div>
-            <p class="citation">Circuit context: Craig Gidney, <a href="https://doi.org/10.22331/q-2018-06-18-74" rel="external">Halving the cost of quantum addition</a> (<a href="https://arxiv.org/abs/1709.06648" rel="external">arXiv:1709.06648</a>). This demo stays at the reversible logical-adder level.</p>
+            <div class="section-head"><h3 id="adder-source-title">add.janus · executed</h3><span class="tag">one entry point · 24 gates</span></div>
+            <div class="editor"><div class="editor-bar">Uncall traverses these procedure calls in reverse</div><textarea class="source adder-source" readonly aria-label="Adder Janus source">${escapeHtml(ADDER_HOST_SOURCE)}</textarea></div>
           </aside>
         </div>
       </section>
 
-      <footer><span>Typed gate stream · HostExecutor call / uncall</span><span>QFT state vector · basis-state logical adder</span></footer>
+      <footer><span>Watch every gate appear, then unwind.</span><span>One procedure · two directions</span></footer>
     </main>
     <script src="/quantum/app.js" defer></script>
   </body>

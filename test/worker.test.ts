@@ -22,14 +22,14 @@ describe("Cloudflare Worker", () => {
     expect(html).toContain("sort.janus · editable");
     expect(html).toContain("procedure bubble_pass");
     expect(html).toContain("trace[6]");
-    expect(html).toContain("Encode, then decode");
-    expect(html).toContain("Turn a tree leaf into a path");
-    expect(html).toContain("encode.janus · no decoder");
+    expect(html).toContain("Encode with one procedure");
+    expect(html).toContain("Store a tree leaf as a path");
+    expect(html).toContain("encode.janus · editable");
     expect(html).toContain("encode_path.janus · editable");
     expect(html).toContain('data-tree-node="6"');
     expect(html).toContain('data-testid="tree-call"');
     expect(html).toContain('data-tree-path-bit="0"');
-    expect(html).toContain("No generated inverse program. The same AST runs backward.");
+    expect(html).toContain("One procedure · two directions");
     expect(html).toContain('href="/quantum"');
   });
 
@@ -47,15 +47,17 @@ describe("Cloudflare Worker", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
-    expect(html).toContain("Quantum circuits have a direction.");
+    expect(html).toContain("Run a circuit forward.");
     expect(html).toContain('role="tablist"');
     expect(html).toContain('id="qft-tab"');
     expect(html).toContain('id="adder-tab"');
     expect(html).toContain('id="qft-output"');
     expect(html).toContain('id="adder-output-b"');
-    expect(html).toContain("3-qubit state vector");
-    expect(html).toContain("Logical Toffoli primitives; no Clifford+T decomposition");
-    expect(html).toContain("Halving the cost of quantum addition");
+    expect(html).toContain("A number becomes phase.");
+    expect(html).toContain("qft.janus · executed");
+    expect(html).toContain("add.janus · executed");
+    expect(html).not.toContain("Clifford+T");
+    expect(html).not.toContain("T-count");
     expect(html).toContain('src="/quantum/app.js"');
 
     const bundle = await app.request("/quantum/app.js");

@@ -179,6 +179,23 @@ const renderStream = (
 const isBusy = (phase: QuantumRuntimePhase): boolean =>
   phase === "running-forward" || phase === "running-backward";
 
+const phaseLabel = (phase: QuantumRuntimePhase): string => {
+  switch (phase) {
+    case "ready":
+      return "ready";
+    case "running-forward":
+      return "calling";
+    case "called":
+      return "forward complete";
+    case "running-backward":
+      return "uncalling";
+    case "restored":
+      return "restored";
+    case "error":
+      return "error";
+  }
+};
+
 const qftTab = element<HTMLButtonElement>("qft-tab");
 const adderTab = element<HTMLButtonElement>("adder-tab");
 const qftPanel = element<HTMLElement>("qft-panel");
@@ -252,10 +269,10 @@ const renderQft = (): void => {
   qftCall.disabled = snapshot.phase !== "ready" && snapshot.phase !== "restored";
   qftUncall.disabled = snapshot.phase !== "called";
   qftReset.disabled = isBusy(snapshot.phase);
-  qftStep.textContent = `${snapshot.phase} · ${displayedSteps.length} / 7`;
+  qftStep.textContent = `${phaseLabel(snapshot.phase)} · ${displayedSteps.length} / 7`;
   qftExecutionLabel.textContent = displayingBackward
-    ? "Backward execution: reverse order; CP angles have the opposite sign."
-    : "Forward execution: H and controlled-phase gates, followed by bit-order swap.";
+    ? "Uncall: the inverse gates appear in reverse order."
+    : "Call: the QFT gates appear from left to right.";
   renderCircuit(
     qftCircuit,
     qftRuntime.wires,
@@ -294,21 +311,21 @@ const renderQft = (): void => {
   qftStatus.className = "status";
   switch (snapshot.phase) {
     case "ready":
-      qftStatus.innerHTML = "<strong>Ready.</strong> Call QFT to move the basis value into relative phase.";
+      qftStatus.innerHTML = "<strong>Ready.</strong> Call QFT and watch the value move into relative phase.";
       break;
     case "running-forward":
-      qftStatus.innerHTML = `<strong>Emitting QFT.</strong> Gate ${snapshot.currentStep?.step ?? 0} of 7; norm ${snapshot.norm.toFixed(12)}.`;
+      qftStatus.innerHTML = `<strong>Running QFT.</strong> Gate ${snapshot.currentStep?.step ?? 0} of 7.`;
       break;
     case "called":
       qftStatus.classList.add("is-ok");
-      qftStatus.innerHTML = "<strong>Forward verified.</strong> All eight probabilities are 1/8. Change the cyan phase-encoded output before Uncall, or keep it for an exact round trip.";
+      qftStatus.innerHTML = "<strong>The value is now a phase pattern.</strong> All eight magnitudes match, but their arrows point in different directions. Uncall to recover the value.";
       break;
     case "running-backward":
-      qftStatus.innerHTML = `<strong>Emitting QFT†.</strong> Adjoint gate ${snapshot.currentStep?.step ?? 0} of 7.`;
+      qftStatus.innerHTML = `<strong>Running inverse QFT.</strong> Gate ${snapshot.currentStep?.step ?? 0} of 7.`;
       break;
     case "restored":
       qftStatus.classList.add("is-ok");
-      qftStatus.innerHTML = `<strong>Exact round trip.</strong> QFT† QFT |${binary(snapshot.input, 3)}⟩ = |${binary(snapshot.input, 3)}⟩.`;
+      qftStatus.innerHTML = `<strong>The value is back.</strong> The inverse gate sequence recovered |${binary(snapshot.input, 3)}⟩.`;
       break;
     case "error":
       qftStatus.classList.add("is-error");
@@ -331,7 +348,7 @@ qftOutput.addEventListener("change", () => {
   try {
     qftRuntime.editCalledOutput(Number(qftOutput.value));
     qftStatus.className = "status";
-    qftStatus.innerHTML = `<strong>Output edited.</strong> Uncall will decode this phase pattern as |${binary(Number(qftOutput.value), 3)}⟩.`;
+    qftStatus.innerHTML = `<strong>Phase pattern changed.</strong> Uncall will turn this pattern into |${binary(Number(qftOutput.value), 3)}⟩.`;
   } catch (error) {
     qftStatus.className = "status is-error";
     qftStatus.textContent = error instanceof Error ? error.message : String(error);
@@ -399,12 +416,12 @@ const renderAdder = (): void => {
   adderReset.disabled = isBusy(snapshot.phase);
   adderEquation.textContent = `${snapshot.inputA} + ${snapshot.inputB} mod 16`;
   adderRegisterA.textContent = `${binary(basis.a, 4)} · ${basis.a}`;
-  adderAncilla.textContent = `${basis.ancilla} · ${basis.ancilla === 0 ? "clean" : "carry"}`;
+  adderAncilla.textContent = String(basis.ancilla);
   adderAncillaBox.classList.toggle("is-clean", basis.ancilla === 0);
-  adderStep.textContent = `${snapshot.phase} · ${displayedSteps.length} / 24`;
+  adderStep.textContent = `${phaseLabel(snapshot.phase)} · ${displayedSteps.length} / 24`;
   adderExecutionLabel.textContent = displayingBackward
-    ? "Backward execution: the same logical gates are emitted in reverse order."
-    : "Forward execution: ripple carry through MAJ, then clean it through UMA.";
+    ? "Uncall: the same gates appear in reverse to subtract a."
+    : "Call: the gates add a into b.";
   renderCircuit(
     adderCircuit,
     adderRuntime.wires,
@@ -420,18 +437,18 @@ const renderAdder = (): void => {
       adderStatus.innerHTML = "<strong>Ready.</strong> Call add to compute b = a + b mod 16.";
       break;
     case "running-forward":
-      adderStatus.innerHTML = `<strong>Emitting addition.</strong> Logical gate ${snapshot.currentStep?.step ?? 0} of 24.`;
+      adderStatus.innerHTML = `<strong>Adding.</strong> Gate ${snapshot.currentStep?.step ?? 0} of 24.`;
       break;
     case "called":
       adderStatus.classList.add("is-ok");
-      adderStatus.innerHTML = `<strong>Forward verified.</strong> a stayed ${basis.a}; b is ${basis.b}; carry ancilla returned to |0⟩. Edit the cyan b output before Uncall if desired.`;
+      adderStatus.innerHTML = `<strong>Addition complete.</strong> a stayed ${basis.a} and b became ${basis.b}. Uncall to run the same gates backward.`;
       break;
     case "running-backward":
-      adderStatus.innerHTML = `<strong>Emitting subtraction.</strong> Reverse gate ${snapshot.currentStep?.step ?? 0} of 24.`;
+      adderStatus.innerHTML = `<strong>Subtracting.</strong> Reverse gate ${snapshot.currentStep?.step ?? 0} of 24.`;
       break;
     case "restored":
       adderStatus.classList.add("is-ok");
-      adderStatus.innerHTML = `<strong>Exact round trip.</strong> |a⟩|b⟩|0⟩ = |${binary(basis.a, 4)}⟩|${binary(basis.b, 4)}⟩|0⟩ restored.`;
+      adderStatus.innerHTML = `<strong>The input is back.</strong> a is ${basis.a}, b is ${basis.b}, and the carry bit is zero.`;
       break;
     case "error":
       adderStatus.classList.add("is-error");
@@ -465,7 +482,7 @@ adderOutputB.addEventListener("change", () => {
     const snapshot = adderRuntime.getSnapshot();
     const restored = (value - snapshot.inputA + 16) % 16;
     adderStatus.className = "status";
-    adderStatus.innerHTML = `<strong>Output edited.</strong> Uncall will subtract a = ${snapshot.inputA} and restore b = ${restored}.`;
+    adderStatus.innerHTML = `<strong>Sum changed to ${value}.</strong> Running backward will subtract ${snapshot.inputA} and produce ${restored}.`;
   } catch (error) {
     adderStatus.className = "status is-error";
     adderStatus.textContent = error instanceof Error ? error.message : String(error);

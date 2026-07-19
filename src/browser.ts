@@ -59,10 +59,10 @@ const selectDemo = (selected: DemoName): void => {
   treePanel.hidden = !treeSelected;
   demoExplainer.innerHTML =
     selected === "sort"
-      ? "<strong>Run the same sort in both directions.</strong> A reversible nested loop orders <code>length</code> inputs; <code>uncall</code> reconstructs the original control flow from the trace."
+      ? "<strong>Watch information move instead of disappear.</strong> The array becomes sorted while six trace bits remember the swaps. <code>uncall</code> reads those bits backward to restore the input."
       : selected === "codec"
-        ? "<strong>Write only the encoder.</strong> The ciphertext remains editable after <code>call encode</code>; <code>uncall encode</code> runs the same program backward from the edited value."
-        : "<strong>Move a leaf position into a path.</strong> <code>call encode_path</code> climbs to the root; edit its path bits, then <code>uncall</code> pops them while descending the same tree.";
+        ? "<strong>See decoding emerge from encoding.</strong> <code>call encode</code> adds a shift to five characters; <code>uncall encode</code> runs those same statements backward."
+        : "<strong>Turn a position into directions.</strong> <code>call encode_path</code> climbs from a leaf and stores its route; <code>uncall</code> consumes that route on the way down.";
 };
 
 sortTab.addEventListener("click", () => selectDemo("sort"));
@@ -130,7 +130,14 @@ const renderSort = (): void => {
   sortCallButton.disabled = sortPhase === "called";
   sortUncallButton.disabled = sortPhase !== "called";
   sortSource.disabled = sortPhase === "called";
-  sortPhaseLabel.textContent = sortPhase;
+  sortPhaseLabel.textContent =
+    sortPhase === "initial"
+      ? "input"
+      : sortPhase === "called"
+        ? "sorted"
+        : sortPhase === "restored"
+          ? "restored"
+          : "error";
   sortValuesHint.textContent =
     sortPhase === "called"
       ? `length ${sortState.length} · edit output, then uncall`
@@ -160,7 +167,7 @@ sortCallButton.addEventListener("click", () => {
     sortState = callPureSort(sortSource.value, sortInitialState);
     sortPhase = "called";
     sortStatus.className = "status";
-    sortStatus.innerHTML = `<strong>Forward complete.</strong> Edit the cyan output before Uncall, or leave it unchanged for an exact round trip. trace = [${sortState.trace.join(",")}].`;
+    sortStatus.innerHTML = `<strong>Sorted.</strong> The trace [${sortState.trace.join(", ")}] remembers which comparisons swapped. Uncall to follow them back.`;
   } catch (error) {
     sortPhase = "error";
     sortStatus.className = "status is-error";
@@ -186,7 +193,7 @@ sortUncallButton.addEventListener("click", () => {
     sortStatus.innerHTML = outputEdited
       ? `<strong>Backward from edited output.</strong> It maps to [${restored.values.join(", ")}], instead of the original [${sortInitialState.values.join(", ")}].`
       : verified
-        ? "<strong>Exact round trip.</strong> Original ordering restored; trace returned to zero."
+        ? "<strong>Back at the start.</strong> The original order is restored and the trace is empty again."
         : "<strong>Backward complete.</strong> The result differs from the original input.";
   } catch (error) {
     sortStatus.className = "status is-error";
@@ -201,7 +208,7 @@ sortValueInputs.forEach((input) => {
     if (sortPhase !== "called") return;
     sortStatus.className = "status";
     sortStatus.innerHTML =
-      "<strong>Output edited.</strong> Uncall will run backward from these values using the recorded trace.";
+      "<strong>Sorted values changed.</strong> Uncall will check whether the recorded trace still describes a path back from them.";
   });
 });
 
@@ -278,7 +285,14 @@ const renderCodec = (): void => {
   }
   codecCallButton.disabled = codecPhase === "called";
   codecUncallButton.disabled = codecPhase !== "called";
-  codecPhaseLabel.textContent = codecPhase;
+  codecPhaseLabel.textContent =
+    codecPhase === "initial"
+      ? "plain text"
+      : codecPhase === "called"
+        ? "encoded"
+        : codecPhase === "restored"
+          ? "decoded"
+          : "error";
   codecMessageLabel.textContent =
     codecPhase === "called" ? "encoded output · editable" : "5-character message";
   codecShiftLabel.textContent =
@@ -302,7 +316,7 @@ codecCallButton.addEventListener("click", () => {
     codecState = callPureEncode(codecSource.value, codecInitialState);
     codecPhase = "called";
     codecStatus.className = "status";
-    codecStatus.innerHTML = `<strong>Encoded.</strong> ${escapeHtml(codecText(codecInitialState))} → ${escapeHtml(codecText(codecState))}. Edit the cyan output before Uncall to decode a different message.`;
+    codecStatus.innerHTML = `<strong>Encoded.</strong> ${escapeHtml(codecText(codecInitialState))} → ${escapeHtml(codecText(codecState))}. Uncall runs the five additions backward.`;
   } catch (error) {
     codecPhase = "error";
     codecStatus.className = "status is-error";
@@ -324,7 +338,7 @@ codecUncallButton.addEventListener("click", () => {
     codecStatus.innerHTML = outputEdited
       ? `<strong>Decoded from edited output.</strong> It becomes ${escapeHtml(codecText(restored))}, instead of the original ${escapeHtml(codecText(codecInitialState))}.`
       : verified
-        ? "<strong>Decoded by uncall.</strong> The exact original message is back."
+        ? "<strong>Decoded by uncall.</strong> The original message is back."
         : "<strong>Backward complete.</strong> The result differs from the original message.";
   } catch (error) {
     codecStatus.className = "status is-error";
@@ -350,7 +364,7 @@ const previewEditedCodecOutput = (): void => {
   });
   codecStatus.className = "status";
   codecStatus.innerHTML =
-    "<strong>Output edited.</strong> Uncall will decode from this modified state.";
+    "<strong>Encoded text changed.</strong> Uncall will show which plain text this new value came from.";
 };
 
 codecInput.addEventListener("input", previewEditedCodecOutput);
@@ -379,8 +393,6 @@ const treeStatus = element<HTMLParagraphElement>("tree-status");
 const treePhaseLabel = element<HTMLElement>("tree-phase");
 const treeNodeValue = element<HTMLElement>("tree-node-value");
 const treeDepthValue = element<HTMLElement>("tree-depth-value");
-const treeTempValue = element<HTMLElement>("tree-temp-value");
-const treeTempRegister = element<HTMLElement>("tree-temp-register");
 const treeRoute = element<HTMLElement>("tree-route");
 const treeProofSymbol = element<HTMLElement>("tree-proof-symbol");
 const treeProofResult = element<HTMLElement>("tree-proof-result");
@@ -465,14 +477,18 @@ const renderTree = (): void => {
 
   treeNodeValue.textContent = `${treeState.node} · ${treeSymbol(treeState.node)}`;
   treeDepthValue.textContent = String(treeState.depth);
-  treeTempValue.textContent =
-    treeState.temp === 0 ? "0 · clean" : `${treeState.temp} · not clean`;
-  treeTempRegister.classList.toggle("is-clean", treeState.temp === 0);
   treeRoute.textContent = treePhase === "called" ? treePathCode(treeState) : "—";
   treeProofSymbol.textContent = symbol;
   treeProofResult.textContent =
     treePhase === "restored" ? treeSymbol(treeState.node) : symbol;
-  treePhaseLabel.textContent = treePhase;
+  treePhaseLabel.textContent =
+    treePhase === "initial"
+      ? "leaf selected"
+      : treePhase === "called"
+        ? "path stored"
+        : treePhase === "restored"
+          ? "leaf restored"
+          : "error";
   treeSource.disabled = treePhase === "called";
   treeCallButton.disabled = treePhase === "called";
   treeUncallButton.disabled = treePhase !== "called";
@@ -513,7 +529,7 @@ treeCallButton.addEventListener("click", () => {
     treeState = callTreePathEncode(treeSource.value, treeInitialState);
     treePhase = "called";
     treeStatus.className = "status";
-    treeStatus.innerHTML = `<strong>Encoded ${treeSymbol(selectedTreeLeaf)} → ${treePathCode(treeState)}.</strong> The cursor climbed ${treeState.depth} edge${treeState.depth === 1 ? "" : "s"}; temp returned to zero. Toggle a cyan path bit before Uncall if desired.`;
+    treeStatus.innerHTML = `<strong>${treeSymbol(selectedTreeLeaf)} became path ${treePathCode(treeState)}.</strong> Uncall will read the path backward and descend to the leaf. Flip a path bit to choose a different destination.`;
   } catch (error) {
     treePhase = "error";
     treeStatus.className = "status is-error";
@@ -538,9 +554,9 @@ treeUncallButton.addEventListener("click", () => {
     treePhase = "restored";
     treeStatus.className = "status is-verified";
     treeStatus.innerHTML = outputEdited
-      ? `<strong>Backward from edited path.</strong> Uncall mapped it to ${treeSymbol(restored.node)} instead of ${treeSymbol(treeInitialState.node)}; path, depth, and temp are zero again.`
+      ? `<strong>The edited path leads to ${treeSymbol(restored.node)}.</strong> Uncall consumed the path while descending the tree.`
       : verified
-        ? `<strong>Exact leaf restored.</strong> Uncall popped the route back to ${treeSymbol(restored.node)}; path, depth, and temp are zero again.`
+        ? `<strong>${treeSymbol(restored.node)} is back.</strong> Uncall consumed the path while returning to the original leaf.`
         : "<strong>Backward complete.</strong> The result differs from the original leaf.";
     treeProofResult.textContent = treeSymbol(restored.node);
   } catch (error) {
