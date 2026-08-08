@@ -1,10 +1,11 @@
 import { compileHostModule, HostExecutor } from "../host";
 import {
-  ADDER_GATE_DEFINITIONS,
-  ADDER_HOST_SOURCE,
+  ADDER_PARAMETERIZED_GATE_DEFINITIONS,
   ADDER_PROCEDURE,
   ADDER_SOURCE,
+  ADDER_WIDTH,
   ADDER_WIRES,
+  specializeAdderSource,
 } from "./adder-source";
 import {
   AdderBasisSimulator,
@@ -370,9 +371,10 @@ export class AdderDemoRuntime {
       },
     };
     this.#runtime = new QuantumProcedureRuntime({
-      source: ADDER_HOST_SOURCE,
+      source: specializeAdderSource(ADDER_WIDTH),
       procedure: ADDER_PROCEDURE,
-      catalog: new QuantumGateCatalog(ADDER_WIRES, ADDER_GATE_DEFINITIONS),
+      catalog: new QuantumGateCatalog(ADDER_WIRES, []),
+      parameterizedGates: ADDER_PARAMETERIZED_GATE_DEFINITIONS,
       simulator,
       validateCalled: (snapshot) => {
         if (snapshot.a !== inputA) {

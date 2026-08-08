@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import { compileHostModule, deriveHostPlan } from "../src/host";
 import { checkStatic, compileJanus, linkNames, parse } from "../src/janus";
 import {
-  ADDER_GATE_DEFINITIONS,
   ADDER_PROCEDURE,
   ADDER_SOURCE,
   ADDER_WIRES,
   AdderDemoRuntime,
-  adderGateDefinitions,
+  adderParameterizedGateDefinitions,
   adderWires,
   inverseGate,
   QFT_GATE_DEFINITIONS,
@@ -226,7 +225,7 @@ describe("quantum gate catalog validation", () => {
   });
 
   it("rejects an unregistered primitive before execution", () => {
-    const catalog = new QuantumGateCatalog(ADDER_WIRES, ADDER_GATE_DEFINITIONS);
+    const catalog = new QuantumGateCatalog(ADDER_WIRES, []);
     const registry = catalog.createPrimitiveRegistry({ emit: async () => undefined });
     expect(() =>
       compileHostModule("procedure broken()\n  call x_not_registered()", registry),
@@ -247,8 +246,8 @@ describe("width-generic Janus quantum sources", () => {
       { name: "swap", hasForward: true, hasBackward: true, arity: 2 },
     ]);
     const adder = linkNames(checkStatic(parse(ADDER_SOURCE)), [
-      { name: "maj_at_index", hasForward: true, hasBackward: true },
-      { name: "uma_at_index", hasForward: true, hasBackward: true },
+      { name: "maj", hasForward: true, hasBackward: true, arity: 1 },
+      { name: "uma", hasForward: true, hasBackward: true, arity: 1 },
     ]);
 
     expect(qft.declarations.map(({ name }) => name)).toEqual([
@@ -277,10 +276,10 @@ describe("width-generic Janus quantum sources", () => {
         "skip",
       );
     const qft = compileJanus(qftControlSource);
-    const adder = compileJanus(`${ADDER_SOURCE}
-
-procedure maj_at_index()
-procedure uma_at_index()`);
+    const adderControlSource = ADDER_SOURCE
+      .replace("call maj(index)", "skip")
+      .replace("call uma(index)", "skip");
+    const adder = compileJanus(adderControlSource);
 
     for (let length = 0; length <= 8; length += 1) {
       const qftInput = { length, target: 0, control: 0, swap_index: 0 };
@@ -325,18 +324,29 @@ procedure uma_at_index()`);
 
   it("specializes the same MAJ/UMA loop algorithm across logical widths", () => {
     for (let width = 1; width <= 8; width += 1) {
-      const catalog = new QuantumGateCatalog(
-        adderWires(width),
-        adderGateDefinitions(width),
+      const catalog = new QuantumGateCatalog(adderWires(width), []);
+      const registry = catalog.createPrimitiveRegistry(
+        { emit: async () => undefined },
+        adderParameterizedGateDefinitions(width),
       );
-      const registry = catalog.createPrimitiveRegistry({
-        emit: async () => undefined,
-      });
       const module = compileHostModule(specializeAdderSource(width), registry);
       const forward = deriveHostPlan(module, ADDER_PROCEDURE, "forward");
       const backward = deriveHostPlan(module, ADDER_PROCEDURE, "backward");
 
       expect(forward).toHaveLength(width * 6);
+      expect(forward.slice(0, 3)).toEqual([
+        { primitiveName: "cx", direction: "forward", arguments: [0, width] },
+        {
+          primitiveName: "cx",
+          direction: "forward",
+          arguments: [0, width * 2],
+        },
+        {
+          primitiveName: "ccx",
+          direction: "forward",
+          arguments: [width * 2, width, 0],
+        },
+      ]);
       expect(backward.map(({ primitiveName }) => primitiveName)).toEqual(
         forward.map(({ primitiveName }) => primitiveName).reverse(),
       );

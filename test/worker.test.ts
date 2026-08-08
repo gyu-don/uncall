@@ -59,7 +59,9 @@ describe("Cloudflare Worker", () => {
     expect(html).toContain(
       "call cp_pi(control, target, 1, 2 ** (target - control))",
     );
-    expect(html).toContain("add.janus · executed");
+    expect(html).toContain("add.janus · width-generic");
+    expect(html).toContain("call maj(index)");
+    expect(html).toContain("call uma(index)");
     expect(html).not.toContain("Clifford+T");
     expect(html).not.toContain("T-count");
     expect(html).toContain('src="/quantum/app.js"');
