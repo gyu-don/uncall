@@ -1,5 +1,5 @@
 import { ADDER_HOST_SOURCE } from "./adder-source";
-import { QFT_HOST_SOURCE } from "./qft-source";
+import { QFT_SOURCE } from "./qft-source";
 
 const escapeHtml = (value: string): string =>
   value
@@ -250,8 +250,8 @@ export const renderQuantumHtml = (): string => `<!doctype html>
             </div>
           </section>
           <aside class="side-pane" aria-labelledby="qft-source-title">
-            <div class="section-head"><h3 id="qft-source-title">qft.janus · executed</h3><span class="tag">one entry point · seven gates</span></div>
-            <div class="editor"><div class="editor-bar">Uncall traverses these procedure calls in reverse</div><textarea class="source" readonly aria-label="QFT Janus source">${escapeHtml(QFT_HOST_SOURCE)}</textarea></div>
+            <div class="section-head"><h3 id="qft-source-title">qft.janus · width-generic</h3><span class="tag">one algorithm · variable width</span></div>
+            <div class="editor"><div class="editor-bar">Specialized to three qubits by the host adapter before execution</div><textarea class="source" readonly aria-label="QFT Janus source">${escapeHtml(QFT_SOURCE)}</textarea></div>
           </aside>
         </div>
       </section>

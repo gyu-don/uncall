@@ -18,10 +18,11 @@ import {
 } from "./gates";
 import {
   QFT_GATE_DEFINITIONS,
-  QFT_HOST_SOURCE,
   QFT_PROCEDURE,
   QFT_SOURCE,
+  QFT_WIDTH,
   QFT_WIRES,
+  specializeQftSource,
 } from "./qft-source";
 import {
   QftStateVector,
@@ -264,7 +265,7 @@ export class QftDemoRuntime {
       },
     };
     this.#runtime = new QuantumProcedureRuntime({
-      source: QFT_HOST_SOURCE,
+      source: specializeQftSource(QFT_WIDTH),
       procedure: QFT_PROCEDURE,
       catalog: new QuantumGateCatalog(QFT_WIRES, QFT_GATE_DEFINITIONS),
       simulator,

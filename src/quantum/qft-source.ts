@@ -4,8 +4,9 @@ export const QFT_PROCEDURE = "qft";
 export const QFT_WIDTH = 3;
 
 /**
- * Width-generic Janus source shown in the demo. The quantum adapter specializes
- * the index-aware primitives to concrete, argument-free host primitive names.
+ * Canonical width-generic Janus source shown in the demo. The quantum adapter
+ * specializes the index-aware primitives to concrete, argument-free host
+ * primitive names before execution.
  * As with the sort demo, `length` is logical input while the UI chooses one
  * fixed supported allocation for visualization.
  */
@@ -121,5 +122,3 @@ export const specializeQftSource = (width: number): string => {
     `procedure reverse_qubit_order()${swapCalls.length === 0 ? "" : `\n${swapCalls.join("\n")}`}`,
   ].join("\n\n");
 };
-
-export const QFT_HOST_SOURCE = specializeQftSource(QFT_WIDTH);
