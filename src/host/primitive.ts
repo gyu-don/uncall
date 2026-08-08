@@ -6,6 +6,7 @@ export type HostPrimitiveContext = {
   readonly sessionId: string;
   readonly primitiveName: string;
   readonly direction: Direction;
+  readonly arguments: readonly number[];
   readonly span: SourceSpan;
 };
 
@@ -20,8 +21,13 @@ const normalizeName = (name: string): string => name.toLowerCase();
 
 export class PrimitiveRegistry {
   readonly #primitives = new Map<string, RegisteredHostPrimitive>();
+  readonly #arities = new Map<string, number>();
 
-  register<Receipt>(name: string, primitive: HostPrimitive<Receipt>): this {
+  register<Receipt>(
+    name: string,
+    primitive: HostPrimitive<Receipt>,
+    arity = 0,
+  ): this {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name)) {
       throw new TypeError(`Invalid primitive name ${JSON.stringify(name)}`);
     }
@@ -29,10 +35,14 @@ export class PrimitiveRegistry {
     if (this.#primitives.has(normalizedName)) {
       throw new Error(`Duplicate primitive ${JSON.stringify(normalizedName)}`);
     }
+    if (!Number.isSafeInteger(arity) || arity < 0) {
+      throw new TypeError(`Invalid primitive arity ${JSON.stringify(arity)}.`);
+    }
     this.#primitives.set(
       normalizedName,
       primitive as unknown as RegisteredHostPrimitive,
     );
+    this.#arities.set(normalizedName, arity);
     return this;
   }
 
@@ -45,6 +55,7 @@ export class PrimitiveRegistry {
       name,
       hasForward: true,
       hasBackward: true,
+      arity: this.#arities.get(name) ?? 0,
     }));
   }
 }

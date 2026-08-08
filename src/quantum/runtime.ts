@@ -13,11 +13,12 @@ import {
 import {
   inverseGate,
   QuantumGateCatalog,
+  type ParameterizedQuantumGateDefinition,
   type QuantumGate,
   type QuantumGateEmission,
 } from "./gates";
 import {
-  QFT_GATE_DEFINITIONS,
+  QFT_PARAMETERIZED_GATE_DEFINITIONS,
   QFT_PROCEDURE,
   QFT_SOURCE,
   QFT_WIDTH,
@@ -58,6 +59,7 @@ type RuntimeConfig<Snapshot> = {
   readonly source: string;
   readonly procedure: string;
   readonly catalog: QuantumGateCatalog;
+  readonly parameterizedGates?: readonly ParameterizedQuantumGateDefinition[];
   readonly simulator: Simulator<Snapshot>;
   readonly validateCalled: (snapshot: Snapshot) => void;
   readonly validateRestored: (snapshot: Snapshot) => void;
@@ -99,9 +101,10 @@ class QuantumProcedureRuntime<Snapshot> {
       throw new RangeError("Quantum gate delay must be a non-negative number.");
     }
 
-    const registry = this.catalog.createPrimitiveRegistry({
-      emit: (emission) => this.#emit(emission),
-    });
+    const registry = this.catalog.createPrimitiveRegistry(
+      { emit: (emission) => this.#emit(emission) },
+      config.parameterizedGates,
+    );
     const module = compileHostModule(this.source, registry);
     this.#executor = new HostExecutor(module, registry);
   }
@@ -267,7 +270,8 @@ export class QftDemoRuntime {
     this.#runtime = new QuantumProcedureRuntime({
       source: specializeQftSource(QFT_WIDTH),
       procedure: QFT_PROCEDURE,
-      catalog: new QuantumGateCatalog(QFT_WIRES, QFT_GATE_DEFINITIONS),
+      catalog: new QuantumGateCatalog(QFT_WIRES, []),
+      parameterizedGates: QFT_PARAMETERIZED_GATE_DEFINITIONS,
       simulator,
       validateCalled: ({ amplitudes, norm }) => {
         if (Math.abs(norm - 1) > 1e-10) {

@@ -55,8 +55,10 @@ describe("Cloudflare Worker", () => {
     expect(html).toContain('id="adder-output-b"');
     expect(html).toContain("A number becomes phase.");
     expect(html).toContain("qft.janus · width-generic");
-    expect(html).toContain("call h_at_target()");
-    expect(html).toContain("call cp_at_control_target()");
+    expect(html).toContain("call h(target)");
+    expect(html).toContain(
+      "call cp_pi(control, target, 1, 2 ** (target - control))",
+    );
     expect(html).toContain("add.janus · executed");
     expect(html).not.toContain("Clifford+T");
     expect(html).not.toContain("T-count");

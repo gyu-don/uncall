@@ -25,6 +25,7 @@ const tokenLabel: Partial<Record<TokenKind, string>> = {
   rightParen: '")"',
   leftBracket: '"["',
   rightBracket: '"]"',
+  comma: '","',
   then: '"then"',
   else: '"else"',
   fi: '"fi"',
@@ -38,6 +39,7 @@ const binaryOperators: Partial<Record<TokenKind, BinaryOperator>> = {
   plus: "+",
   minus: "-",
   star: "*",
+  power: "**",
   slash: "/",
   backslash: "\\",
   bang: "!",
@@ -183,11 +185,19 @@ class Parser {
     }
     const name = this.#consume("identifier");
     let end = name.span;
-    if (this.#match("leftParen")) end = this.#consume("rightParen").span;
+    const arguments_: Expression[] = [];
+    if (this.#match("leftParen")) {
+      if (!this.#check("rightParen")) {
+        do arguments_.push(this.#parseExpression());
+        while (this.#match("comma"));
+      }
+      end = this.#consume("rightParen").span;
+    }
     return {
       kind: "CallStatement",
       callKind: token.kind,
       name: normalizeName(name.lexeme),
+      arguments: arguments_,
       nameSpan: name.span,
       span: mergeSpans(token.span, end),
     };

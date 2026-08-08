@@ -57,7 +57,7 @@ describe("Host compiler and primitive registry", () => {
     const { registry } = createHarness(["Create_Thing"]);
 
     expect(registry.manifests).toEqual([
-      { name: "create_thing", hasForward: true, hasBackward: true },
+      { name: "create_thing", hasForward: true, hasBackward: true, arity: 0 },
     ]);
     expect(() =>
       compileHostModule("procedure deploy()\ncall CREATE_THING()", registry),
@@ -119,6 +119,43 @@ procedure second()
       ),
     ).toThrowError(/Recursive host procedure call/);
   });
+
+  it("checks primitive arity and executes constant call arguments", async () => {
+    const seen: number[][] = [];
+    const registry = new PrimitiveRegistry().register(
+      "phase",
+      {
+        forward: async (context) => {
+          seen.push([...context.arguments]);
+          return [...context.arguments];
+        },
+        backward: async (_receipt, context) => {
+          seen.push([...context.arguments]);
+        },
+      },
+      3,
+    );
+
+    expect(() =>
+      compileHostModule("procedure qft()\ncall phase(0, 2)", registry),
+    ).toThrow(/expects 3 arguments/u);
+
+    const module = compileHostModule(
+      "procedure qft()\ncall phase(0, 2, 2 ** 2)",
+      registry,
+    );
+    const executor = new HostExecutor(module, registry);
+    await expect(executor.call("qft")).resolves.toMatchObject({
+      status: "succeeded",
+    });
+    await expect(executor.uncall("qft")).resolves.toMatchObject({
+      status: "succeeded",
+    });
+    expect(seen).toEqual([
+      [0, 2, 4],
+      [0, 2, 4],
+    ]);
+  });
 });
 
 describe("HostExecutor", () => {
@@ -138,14 +175,14 @@ procedure nested()
     const backward = deriveHostPlan(module, "deploy", "backward");
 
     expect(forward).toEqual([
-      { primitiveName: "one", direction: "forward" },
-      { primitiveName: "two", direction: "forward" },
-      { primitiveName: "three", direction: "forward" },
+      { primitiveName: "one", direction: "forward", arguments: [] },
+      { primitiveName: "two", direction: "forward", arguments: [] },
+      { primitiveName: "three", direction: "forward", arguments: [] },
     ]);
     expect(backward).toEqual([
-      { primitiveName: "three", direction: "backward" },
-      { primitiveName: "two", direction: "backward" },
-      { primitiveName: "one", direction: "backward" },
+      { primitiveName: "three", direction: "backward", arguments: [] },
+      { primitiveName: "two", direction: "backward", arguments: [] },
+      { primitiveName: "one", direction: "backward", arguments: [] },
     ]);
     expect(hostPlanHash("deploy", forward, backward)).toMatch(/^fnv1a-/u);
   });

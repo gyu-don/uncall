@@ -408,6 +408,13 @@ class Evaluator {
         return toInt32(left - right);
       case "*":
         return Math.imul(left, right);
+      case "**": {
+        const result = left ** right;
+        if (right < 0 || !Number.isSafeInteger(result)) {
+          throw new JanusRuntimeError("Integer power is out of range", expression.span);
+        }
+        return toInt32(result);
+      }
       case "/":
         if (right === 0) throw new JanusRuntimeError("Division by zero", expression.span);
         return toInt32(Math.trunc(left / right));

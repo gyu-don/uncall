@@ -4,10 +4,12 @@ import type {
   ResolvedProcedure,
   ResolvedStatement,
 } from "../janus/resolver";
+import { evaluateHostArgument } from "./argument";
 
 export type HostPlanStep = {
   readonly primitiveName: string;
   readonly direction: Direction;
+  readonly arguments: readonly number[];
 };
 
 const reverseDirection = (direction: Direction): Direction =>
@@ -43,7 +45,11 @@ export const deriveHostPlan = (
           ? executionDirection
           : reverseDirection(executionDirection);
       if (statement.target === "primitive") {
-        steps.push({ primitiveName: statement.name, direction: effectiveDirection });
+        steps.push({
+          primitiveName: statement.name,
+          direction: effectiveDirection,
+          arguments: statement.arguments.map(evaluateHostArgument),
+        });
         continue;
       }
       const target = procedures.get(statement.name);

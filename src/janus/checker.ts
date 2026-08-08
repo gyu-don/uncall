@@ -109,6 +109,8 @@ export const checkStatic = (module: JanusModule): JanusModule => {
     for (const statement of statements) {
       switch (statement.kind) {
         case "CallStatement":
+          statement.arguments.forEach(checkExpression);
+          break;
         case "SkipStatement":
           break;
         case "UpdateStatement": {

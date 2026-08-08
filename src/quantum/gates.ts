@@ -34,6 +34,12 @@ export type QuantumGateDefinition = {
   readonly gate: QuantumGate;
 };
 
+export type ParameterizedQuantumGateDefinition = {
+  readonly name: string;
+  readonly arity: number;
+  readonly gate: (arguments_: readonly number[]) => QuantumGate;
+};
+
 export type QuantumGateEmission = {
   readonly gate: QuantumGate;
   readonly primitiveName: string;
@@ -123,7 +129,10 @@ export class QuantumGateCatalog {
     return gate === undefined ? undefined : cloneGate(gate);
   }
 
-  createPrimitiveRegistry(emitter: QuantumGateEmitter): PrimitiveRegistry {
+  createPrimitiveRegistry(
+    emitter: QuantumGateEmitter,
+    parameterizedDefinitions: readonly ParameterizedQuantumGateDefinition[] = [],
+  ): PrimitiveRegistry {
     const registry = new PrimitiveRegistry();
     for (const [name, registeredGate] of this.#entries) {
       registry.register(name, {
@@ -150,6 +159,39 @@ export class QuantumGateCatalog {
           });
         },
       });
+    }
+    for (const definition of parameterizedDefinitions) {
+      registry.register(
+        definition.name,
+        {
+          forward: async (context) => {
+            const receipt = definition.gate(context.arguments);
+            this.#validateGate(receipt, `call to ${context.primitiveName}`);
+            await emitter.emit({
+              gate: cloneGate(receipt),
+              primitiveName: context.primitiveName,
+              direction: context.direction,
+            });
+            return cloneGate(receipt);
+          },
+          backward: async (receipt: QuantumGate, context) => {
+            this.#validateGate(receipt, `receipt for ${context.primitiveName}`);
+            const expected = definition.gate(context.arguments);
+            this.#validateGate(expected, `call to ${context.primitiveName}`);
+            if (!quantumGateEqual(receipt, expected)) {
+              throw new Error(
+                `Gate receipt for ${context.primitiveName} does not match its arguments.`,
+              );
+            }
+            await emitter.emit({
+              gate: inverseGate(receipt),
+              primitiveName: context.primitiveName,
+              direction: context.direction,
+            });
+          },
+        },
+        definition.arity,
+      );
     }
     return registry;
   }

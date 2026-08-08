@@ -5,6 +5,7 @@ import type {
   ResolvedStatement,
 } from "../janus/resolver";
 import type { SourceSpan } from "../janus/span";
+import { evaluateHostArgument } from "./argument";
 import { errorMessage, HostRuntimeError } from "./errors";
 import {
   PrimitiveRegistry,
@@ -17,6 +18,7 @@ export type ReceiptJournalEntry = {
   readonly runId: number;
   readonly primitiveName: string;
   readonly receipt: unknown;
+  readonly arguments: readonly number[];
   readonly span: SourceSpan;
 };
 
@@ -26,6 +28,7 @@ export class ReceiptJournal {
   constructor(entries: readonly ReceiptJournalEntry[] = []) {
     this.#entries = entries.map((entry) => ({
       ...entry,
+      arguments: [...(entry.arguments ?? [])],
       span: {
         start: { ...entry.span.start },
         end: { ...entry.span.end },
@@ -61,6 +64,7 @@ export type HostExecutionEvent = {
   readonly sessionId: string;
   readonly primitiveName: string;
   readonly direction: Direction;
+  readonly arguments: readonly number[];
   readonly status: "started" | "succeeded" | "failed";
   readonly span: SourceSpan;
   readonly receipt?: unknown;
@@ -154,6 +158,7 @@ export class HostExecutor {
           "backward",
           entry.span,
           runId,
+          entry.arguments,
         );
       }
       return { status: "succeeded", journalSize: 0 };
@@ -315,6 +320,7 @@ export class HostExecutor {
       effectiveDirection,
       statement.span,
       runId,
+      statement.arguments.map(evaluateHostArgument),
     );
   }
 
@@ -323,6 +329,7 @@ export class HostExecutor {
     direction: Direction,
     span: SourceSpan,
     runId: number,
+    arguments_: readonly number[],
   ): Promise<void> {
     const primitive = this.primitives.get(primitiveName);
     if (primitive === undefined) {
@@ -336,12 +343,14 @@ export class HostExecutor {
       sessionId: this.sessionId,
       primitiveName,
       direction,
+      arguments: [...arguments_],
       span,
     };
     this.#emit({
       sessionId: this.sessionId,
       primitiveName,
       direction,
+      arguments: [...arguments_],
       status: "started",
       span,
     });
@@ -355,6 +364,7 @@ export class HostExecutor {
         sessionId: this.sessionId,
         primitiveName,
         direction,
+        arguments: [...arguments_],
         status: "succeeded",
         span,
         receipt,
@@ -373,6 +383,7 @@ export class HostExecutor {
         sessionId: this.sessionId,
         primitiveName,
         direction,
+        arguments: [...arguments_],
         status: "failed",
         span,
         error: runtimeError,
@@ -392,6 +403,7 @@ export class HostExecutor {
       runId,
       primitiveName: context.primitiveName,
       receipt,
+      arguments: [...context.arguments],
       span: context.span,
     });
     return receipt;
@@ -420,6 +432,13 @@ export class HostExecutor {
     if (entry.primitiveName !== primitiveName) {
       throw new HostRuntimeError(
         `Receipt journal expected ${JSON.stringify(entry.primitiveName)}, not ${JSON.stringify(primitiveName)}`,
+        context.span,
+        "receipt-mismatch",
+      );
+    }
+    if (JSON.stringify(entry.arguments) !== JSON.stringify(context.arguments)) {
+      throw new HostRuntimeError(
+        `Receipt journal arguments do not match primitive ${JSON.stringify(primitiveName)}`,
         context.span,
         "receipt-mismatch",
       );
@@ -455,6 +474,7 @@ export class HostExecutor {
           "backward",
           entry.span,
           runId,
+          entry.arguments,
         );
       } catch (error) {
         cleanupErrors.push(

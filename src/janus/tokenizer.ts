@@ -19,6 +19,8 @@ export type TokenKind =
   | "rightParen"
   | "leftBracket"
   | "rightBracket"
+  | "comma"
+  | "power"
   | "plus"
   | "minus"
   | "star"
@@ -129,10 +131,12 @@ export const tokenize = (source: string): Token[] => {
     ["!=", "xorUpdate"],
     ["<=", "lessEqual"],
     [">=", "greaterEqual"],
+    ["**", "power"],
     ["(", "leftParen"],
     [")", "rightParen"],
     ["[", "leftBracket"],
     ["]", "rightBracket"],
+    [",", "comma"],
     ["+", "plus"],
     ["-", "minus"],
     ["*", "star"],

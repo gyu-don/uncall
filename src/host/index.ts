@@ -1,3 +1,4 @@
+export * from "./argument";
 export * from "./checker";
 export * from "./compiler";
 export * from "./errors";

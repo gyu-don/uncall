@@ -35,6 +35,23 @@ describe("parse", () => {
     });
   });
 
+  it("parses primitive arguments and integer powers", () => {
+    const module = parse(
+      "control target\nprocedure qft()\ncall cp_pi(control, target, 1, 2 ** (target - control))",
+    );
+
+    expect(module.procedures[0]?.body[0]).toMatchObject({
+      kind: "CallStatement",
+      name: "cp_pi",
+      arguments: [
+        { kind: "VariableExpression", name: "control" },
+        { kind: "VariableExpression", name: "target" },
+        { kind: "IntegerLiteral", value: 1 },
+        { kind: "BinaryExpression", operator: "**" },
+      ],
+    });
+  });
+
   it.each([
     ["", "Expected at least one procedure"],
     ["procedure deploy(", 'Expected ")"'],

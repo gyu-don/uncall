@@ -17,7 +17,7 @@ import {
   QftDemoRuntime,
   QftStateVector,
   QuantumGateCatalog,
-  qftGateDefinitions,
+  qftParameterizedGateDefinitions,
   qftWires,
   quantumGateEqual,
   specializeAdderSource,
@@ -69,6 +69,19 @@ describe("three-qubit QFT", () => {
     }
   });
 
+  it("resolves an explicit CP phase fraction to an angle", () => {
+    const cp = qftParameterizedGateDefinitions(3).find(
+      ({ name }) => name === "cp_pi",
+    );
+
+    expect(cp?.gate([0, 2, 3, 4])).toEqual({
+      kind: "cp",
+      control: "q0",
+      target: "q2",
+      angle: (3 * Math.PI) / 4,
+    });
+  });
+
   it("emits the fixture sequence and its reverse adjoint", async () => {
     const runtime = new QftDemoRuntime(5);
     await runtime.call();
@@ -78,13 +91,13 @@ describe("three-qubit QFT", () => {
     const backward = snapshot.backwardSteps.map(({ gate }) => gate);
 
     expect(snapshot.forwardSteps.map(({ primitiveName }) => primitiveName)).toEqual([
-      "h_q2",
-      "cp_pi_2_q1_q2",
-      "cp_pi_4_q0_q2",
-      "h_q1",
-      "cp_pi_2_q0_q1",
-      "h_q0",
-      "swap_q0_q2",
+      "h",
+      "cp_pi",
+      "cp_pi",
+      "h",
+      "cp_pi",
+      "h",
+      "swap",
     ]);
     expect(backward).toHaveLength(forward.length);
     backward.forEach((gate, index) => {
@@ -224,13 +237,14 @@ describe("quantum gate catalog validation", () => {
 describe("width-generic Janus quantum sources", () => {
   it("uses valid Janus data, conditionals, and reversible loops", () => {
     const qft = linkNames(checkStatic(parse(QFT_SOURCE)), [
-      { name: "h_at_target", hasForward: true, hasBackward: true },
+      { name: "h", hasForward: true, hasBackward: true, arity: 1 },
       {
-        name: "cp_at_control_target",
+        name: "cp_pi",
         hasForward: true,
         hasBackward: true,
+        arity: 4,
       },
-      { name: "swap_at_index", hasForward: true, hasBackward: true },
+      { name: "swap", hasForward: true, hasBackward: true, arity: 2 },
     ]);
     const adder = linkNames(checkStatic(parse(ADDER_SOURCE)), [
       { name: "maj_at_index", hasForward: true, hasBackward: true },
@@ -252,11 +266,17 @@ describe("width-generic Janus quantum sources", () => {
   });
 
   it("returns every loop index to zero in both directions", () => {
-    const qft = compileJanus(`${QFT_SOURCE}
-
-procedure h_at_target()
-procedure cp_at_control_target()
-procedure swap_at_index()`);
+    const qftControlSource = QFT_SOURCE
+      .replace("call h(target)", "skip")
+      .replace(
+        "call cp_pi(control, target, 1, 2 ** (target - control))",
+        "skip",
+      )
+      .replace(
+        "call swap(swap_index, length - swap_index - 1)",
+        "skip",
+      );
+    const qft = compileJanus(qftControlSource);
     const adder = compileJanus(`${ADDER_SOURCE}
 
 procedure maj_at_index()
@@ -284,11 +304,12 @@ procedure uma_at_index()`);
     for (let width = 1; width <= 8; width += 1) {
       const catalog = new QuantumGateCatalog(
         qftWires(width),
-        qftGateDefinitions(width),
+        [],
       );
-      const registry = catalog.createPrimitiveRegistry({
-        emit: async () => undefined,
-      });
+      const registry = catalog.createPrimitiveRegistry(
+        { emit: async () => undefined },
+        qftParameterizedGateDefinitions(width),
+      );
       const module = compileHostModule(specializeQftSource(width), registry);
       const forward = deriveHostPlan(module, QFT_PROCEDURE, "forward");
       const backward = deriveHostPlan(module, QFT_PROCEDURE, "backward");

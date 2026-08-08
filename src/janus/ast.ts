@@ -7,6 +7,7 @@ export type BinaryOperator =
   | "+"
   | "-"
   | "*"
+  | "**"
   | "/"
   | "\\"
   | "!"
@@ -84,6 +85,7 @@ export type CallStatement = {
   kind: "CallStatement";
   callKind: CallKind;
   name: string;
+  arguments: readonly Expression[];
   span: SourceSpan;
   nameSpan: SourceSpan;
 };

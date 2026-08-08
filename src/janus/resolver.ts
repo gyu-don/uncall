@@ -20,6 +20,7 @@ export type PrimitiveManifest = {
   name: string;
   hasForward: boolean;
   hasBackward: boolean;
+  arity?: number;
 };
 
 export type ResolvedCallStatement = CallStatement & {
@@ -80,10 +81,14 @@ const resolve = (
 
   for (const manifest of manifests) {
     const name = normalized(manifest.name);
+    const arity = manifest.arity ?? 0;
+    if (!Number.isSafeInteger(arity) || arity < 0) {
+      report(`Primitive ${JSON.stringify(name)} has invalid arity`, module.span);
+    }
     if (primitives.has(name)) {
       report(`Duplicate primitive ${JSON.stringify(name)}`, module.span);
     } else {
-      primitives.set(name, { ...manifest, name });
+      primitives.set(name, { ...manifest, name, arity });
     }
     if (!manifest.hasForward || !manifest.hasBackward) {
       report(`Primitive ${JSON.stringify(name)} must provide both directions`, module.span);
@@ -118,6 +123,23 @@ const resolve = (
             statement.nameSpan,
           );
           return [];
+        }
+        if (target === "procedure" && statement.arguments.length !== 0) {
+          report(
+            `Procedure ${JSON.stringify(statement.name)} does not accept arguments`,
+            statement.span,
+          );
+        }
+        const primitive = primitives.get(statement.name);
+        if (
+          target === "primitive" &&
+          primitive !== undefined &&
+          statement.arguments.length !== (primitive.arity ?? 0)
+        ) {
+          report(
+            `Primitive ${JSON.stringify(statement.name)} expects ${primitive.arity ?? 0} arguments, received ${statement.arguments.length}`,
+            statement.span,
+          );
         }
         return [{ ...statement, target }];
       }
@@ -165,5 +187,10 @@ export const resolveNames = (
 ): ResolvedModule =>
   resolve(
     module,
-    [...primitiveNames].map((name) => ({ name, hasForward: true, hasBackward: true })),
+    [...primitiveNames].map((name) => ({
+      name,
+      hasForward: true,
+      hasBackward: true,
+      arity: 0,
+    })),
   );
